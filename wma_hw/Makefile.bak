@@ -1,0 +1,29 @@
+# The compiler
+CC = g++
+
+#  -c	 links multiple files
+#  -g    adds debugging information to the executable file
+#  -Wall turns on most, but not all, compiler warnings
+CFLAGS = -c -Wall
+
+TARGET = main
+
+all: pwea
+
+pwea: main.o Nature.o Learner.o Expert.o DieHardExpert.o
+	$(CC) $(CFLAGS) -o pwea main.o Nature.o Learner.o DieHardExpert.o
+
+main.o: main.cpp Nature.h Learner.h
+	$(CC) $(CFLAGS) main.cpp
+
+Nature.o: Nature.h Nature.cpp
+	$(CC) $(CFLAGS) Nature.cpp
+
+Learner.o: Learner.h Learner.cpp
+	$(CC) $(CFLAGS) Learner.cpp
+
+DieHardExpert.o: Expert.h DieHardExpert.h DieHardExpert.cpp
+	$(CC) $(CFLAGS) DieHardExpert.cpp
+
+clean:
+	$(RM) pwea *.o  *~

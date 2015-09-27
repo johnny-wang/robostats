@@ -1,9 +1,32 @@
+Main variables to tweak are at the beginning of main():
+float eta = 0.5;
+    int num_rounds = 1000;
+    NAT_TYPE nat = DETER;
+    int learner_type = RWMA;
+
+NAT_TYPE can be {DETER, STOCH, ADVER} for Deterministic, Stochastic, and Adversarial Natures.
+learner_type can be {WMA, RWMA} for Weighted Majority Algorithm or Randomized Weighted Majority Algorithm.
+
+Loss and Regret values are output each round to loss.txt. The columns are:
+ROUND, LOSS, REGRET, LOSS Expert1, LOSS Expert2, LOSS Expert3
+
 ------------
 Compile
 ------------
 % make
 
 ------------
+Compile with debug
+------------
+% make CXXFLAGS=-g
+
+------------
 Run
 ------------
 % ./pwea
+
+------------
+NOTES:
+------------
+If using Mac, use clang++ to make sure you're compiling with C++11:
+% clang++ -std=c++11 -stdlib=libc++  test.cpp

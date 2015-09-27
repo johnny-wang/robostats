@@ -16,6 +16,11 @@ int DeterministicNature::get_label(int round) {
 void DeterministicNature::calculate_label(int round) {
     int game_num = vec_observations[round][0];
 
+    //int isHome = game_num % 4 == 0 ? 1:0;
+    //int weather = game_num % 7;
+    //int fatigue = game_num % 5;
+    //label = ( (isHome == 1 || weather>3) && fatigue<3) == 0? 0: 1;
+
     if (is_prime(game_num))
         label = 1;
     else

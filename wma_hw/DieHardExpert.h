@@ -1,3 +1,6 @@
+#ifndef __DIEHARDEXPERT_HEADER__
+#define __DIEHARDEXPERT_HEADER__
+
 #include "Expert.h"
 
 class DieHardExpert : public Expert {
@@ -5,3 +8,5 @@ class DieHardExpert : public Expert {
         int make_prediction();
         void print();
 };
+
+#endif // __DIEHARDEXPERT_HEADER__

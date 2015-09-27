@@ -9,7 +9,7 @@
  *  label - 0 or 1 (opposite of what we think Learner will predict).
  */
 int AdversarialNature::get_label(int round, std::vector<int> e_pred,
-    std::vector<float> wts) {
+    std::vector<double> wts) {
 
     //printf("weights size: %lu\n", wts.size());
     //printf("pred    size: %lu\n", e_pred.size());
@@ -27,7 +27,7 @@ int AdversarialNature::get_label(int round, std::vector<int> e_pred,
  * 
  */
 void AdversarialNature::calculate_label(int round) {
-    std::map<int, float> wt_sum;  // weighted sum of expert prediction and weights. 
+    std::map<int, double> wt_sum; // weighted sum of expert prediction and weights. 
 
     //printf("weights size: %lu\n", vec_weights.size());
     //printf("pred    size: %lu\n", vec_e_predictions.size());
@@ -56,8 +56,8 @@ void AdversarialNature::calculate_label(int round) {
 /*
  * Print the weight sum map contents.
  */
-void AdversarialNature::print_wt_sum(std::map<int, float> wt_sum) {
-    std::map<int, float>::iterator it;
+void AdversarialNature::print_wt_sum(std::map<int, double> wt_sum) {
+    std::map<int, double>::iterator it;
     for (it=wt_sum.begin(); it!=wt_sum.end(); it++) {
         printf("%d: %f\n", it->first, it->second);
     }
@@ -68,8 +68,8 @@ void AdversarialNature::print_wt_sum(std::map<int, float> wt_sum) {
  * we are assuming the Learner is using WMA so it will pick the _largest_ weighted
  * sum to use as the label.
  */
-void AdversarialNature::get_true_label(std::map<int, float> wt_sum) {
-    std::map<int, float>::iterator it;
+void AdversarialNature::get_true_label(std::map<int, double> wt_sum) {
+    std::map<int, double>::iterator it;
     int count = 0;
 
     for (it=wt_sum.begin(); it!=wt_sum.end(); it++) {

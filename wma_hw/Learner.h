@@ -10,6 +10,9 @@
 #include "DieHardExpert.h"
 #include "PessimistExpert.h"
 #include "OddEvenExpert.h"
+#include "WeatherExpert.h"
+#include "FieldExpert.h"
+#include "LocationExpert.h"
 
 /*
  * Nature class of Prediction with Expert Advice model (PWEA).
@@ -19,12 +22,14 @@
 class Learner {
     public:
         Learner();
-        Learner(int num_experts);
         ~Learner();
 
         int add_diehard_expert();
         int add_pessimist_expert();
         int add_oddeven_expert();
+
+        void add_all_experts();
+        void add_expert(int exp_type);
         int calculate_label(int learner_type);
         void calculate_loss(int nature_label);
         std::vector<int> get_e_predictions();

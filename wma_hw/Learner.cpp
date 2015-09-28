@@ -1,49 +1,88 @@
 #include "Learner.h"
-
-#define WMA  0
-#define RWMA 1
+#include "definitions.h"
 
 /*********************************************************************
  * Basic constructor that creates the 3 experts we need.
  */
 Learner::Learner() {
-    add_diehard_expert();
-    add_pessimist_expert();
-    add_oddeven_expert();
+    //add_diehard_expert();
+    //add_pessimist_expert();
+    //add_oddeven_expert();
 
-    vec_e_predictions.reserve(vec_experts.size());
-    for (int i=0; i<vec_experts.size(); i++) {
-        // Fill expert prediction vector with -1s.
-        vec_e_predictions.push_back(-1);
-        // Fill expert losses with 0s.
-        expert_loss.push_back(0);
-    }
+    //vec_e_predictions.reserve(vec_experts.size());
+    //for (int i=0; i<vec_experts.size(); i++) {
+    //    // Fill expert prediction vector with -1s.
+    //    vec_e_predictions.push_back(-1);
+    //    // Fill expert losses with 0s.
+    //    expert_loss.push_back(0);
+    //}
+
+    add_all_experts();
+
     // initialize learner loss
     learner_loss = 0;
-}
-
-/*********************************************************************
- * Constructor that creates specified number of experts, and the corresponding
- * number of weights.
- */
-Learner::Learner(int num_experts) {
-    for (int i=0; i<num_experts; i++) {
-        // initialize weights
-        vec_weights.push_back(1);
-        // create Experts
-        std::shared_ptr<DieHardExpert> p1(new DieHardExpert());
-        vec_experts.push_back(p1);
-    }
-    // Fill expert prediction vector with -1s.
-    vec_e_predictions.reserve(vec_experts.size());
-    for (int i=0; i<vec_experts.size(); i++)
-        vec_e_predictions.push_back(-1);
 }
 
 /*********************************************************************
  * Destructor
  */
 Learner::~Learner() {
+}
+
+/*********************************************************************
+ *
+ */
+void Learner::add_all_experts() {
+    for (int expert = DIEHARD; expert <= LOCATION; expert++) {
+        add_expert(expert);
+    }
+}
+
+/*********************************************************************
+ *
+ */
+void Learner::add_expert(int exp_type) {
+    std::shared_ptr<Expert> p1;
+    switch(exp_type) {
+        case DIEHARD: {
+            std::shared_ptr<DieHardExpert> p2(new DieHardExpert());
+            p1=p2;
+        }
+        break;
+        case PESSIMIST: {
+            std::shared_ptr<PessimistExpert> p2(new PessimistExpert());
+            p1=p2;
+        }
+        break;
+        case ODDEVEN: {
+            std::shared_ptr<OddEvenExpert> p2(new OddEvenExpert());
+            p1=p2;
+        }
+        break;
+        case WEATHER: {
+            std::shared_ptr<WeatherExpert> p2(new WeatherExpert());
+            p1=p2;
+        }
+        break;
+        case FIELD: {
+            std::shared_ptr<FieldExpert> p2(new FieldExpert());
+            p1=p2;
+        }
+        break;
+        case LOCATION: {
+            std::shared_ptr<LocationExpert> p2(new LocationExpert());
+            p1=p2;
+        }
+        break;
+    }
+    vec_experts.push_back(p1);
+    // add weight for the expert
+    vec_weights.push_back(1);
+    // add expert prediction vector with -1.
+    vec_e_predictions.push_back(-1);
+    // add expert losses with 0.
+    expert_loss.push_back(0);
+
 }
 
 /*********************************************************************
@@ -161,7 +200,7 @@ void Learner::calculate_loss(int nature_label) {
 
     // calculate regret
     // max(loss of learner - expert_loss)
-    regret = 0;
+    regret = -999999999;  // in case we get negative regret
     for (int i=0; i<expert_loss.size(); i++) {
         int temp = learner_loss - expert_loss[i];
         printf("Regret single: %d\n", temp);
@@ -298,7 +337,7 @@ void Learner::update_weights(int nature_label) {
  */
 void Learner::get_wma_label(std::map<int, double> wt_sum) {
     std::map<int, double>::iterator it;
-    float count = 0.0f;
+    double count = 0.0f;
 
     for (it=wt_sum.begin(); it!=wt_sum.end(); it++) {
         printf("%d: %f\n", it->first, it->second);

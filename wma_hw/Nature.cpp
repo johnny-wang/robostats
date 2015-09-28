@@ -4,9 +4,13 @@ Nature::Nature() {
 }
 
 Nature::Nature(int rounds) {
+    srand(time(NULL));
     for(int i=0; i<rounds; i++) {
         std::vector<int> temp;
-        temp.push_back(i);
+        temp.push_back(i);          // the game num
+        temp.push_back(rand()%2);   // weather = sunny?
+        temp.push_back(rand()%2);   // field = grass?
+        temp.push_back(rand()%2);   // location = home?
         vec_observations.push_back(temp);
     }
 }

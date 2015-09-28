@@ -3,6 +3,8 @@
 #define RWMA 1
 
 // Nature types
-enum NAT_TYPE { DETER, STOCH, ADVER };
+enum NAT_TYPE { DETER, STOCH, ADVER, NEW_DET };
 // Expert types
 enum EXP_TYPE { DIEHARD, PESSIMIST, ODDEVEN, WEATHER, FIELD, LOCATION, OPPWIN };
+// Observations
+enum OBSERV { OBS_GAME_ID, OBS_WEATHER, OBS_FIELD, OBS_LOCATION };

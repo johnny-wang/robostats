@@ -70,12 +70,13 @@ void AdversarialNature::print_wt_sum(std::map<int, double> wt_sum) {
  */
 void AdversarialNature::get_true_label(std::map<int, double> wt_sum) {
     std::map<int, double>::iterator it;
-    int count = 0;
+    double count = 999999999.0f;
 
     for (it=wt_sum.begin(); it!=wt_sum.end(); it++) {
         printf("%d: %f\n", it->first, it->second);
         // Adversarial gets the _smallest_ weighted value as label
         if (it->second < count) {
+            count = it->second;
             label = it->first;
         }
     }

@@ -1,11 +1,13 @@
 #include <iostream>
 #include <fstream>
 
+#include "definitions.h"
 #include "Nature.h"
 #include "Learner.h"
 #include "StochasticNature.h"
 #include "DeterministicNature.h"
 #include "AdversarialNature.h"
+#include "NewDeterministicNature.h"
 
 using namespace std;
 
@@ -25,10 +27,6 @@ using namespace std;
  * 
  * Total Rounds = 100.
  */
-
-#define WMA  0
-#define RWMA 1
-enum NAT_TYPE { DETER, STOCH, ADVER };
 
 /*************************************************************
  * Test Stochastic Nature class.
@@ -52,6 +50,7 @@ void test_deterministic() {
 
 /*************************************************************
  * Print regret/loss to file.
+ * NOTE: The columns need to match what we print in print_header_to_file()!
  */
 void print_to_file(int round, std::ofstream &myfile, Learner my_learner) {
 
@@ -73,18 +72,28 @@ void print_to_file(int round, std::ofstream &myfile, Learner my_learner) {
 }
 
 /*************************************************************
+ * Print first row of headers to file. 
+ * NOTE: This needs to match the columns we print in print_to_file()!
+ */
+void print_header_to_file(std::ofstream &myfile) {
+    myfile << "Round, Loss, Regret, Loss Exp1, Loss Exp2, Loss Exp3" << endl;
+}
+
+/*************************************************************
  * MAIN
  */
 int main() {
-    float eta = 0.5;
-    int num_rounds = 1000;
-    NAT_TYPE nat = DETER;
-    int learner_type = RWMA;
+    float eta = 0.25;
+    int num_rounds = 100;
+    NAT_TYPE nat = NEW_DET;
+    int learner_type = WMA;
 
     ofstream myfile;
     myfile.open("loss.txt");
 
-    Nature* my_nature;  // = new Nature(num_rounds);
+    print_header_to_file(myfile);
+
+    Nature* my_nature;
     Learner my_learner = Learner();
     my_learner.set_eta(eta);
 
@@ -98,15 +107,10 @@ int main() {
         case STOCH:
             my_nature = new StochasticNature(num_rounds);
         break;
+        case NEW_DET:
+            my_nature = new NewDeterministicNature(num_rounds);
+        break;
     }
-
-    // tests
-    //cout << my_learner.get_num_experts() << endl;
-    //cout << my_learner.get_num_weights() << endl;
-    //my_learner.print_experts();
-    //my_learner.print_weights();
-    //test_stochastic();
-    //test_deterministic();
 
     for (int round=0; round<num_rounds; round++) {
         int nat_label;
@@ -118,17 +122,28 @@ int main() {
         my_learner.make_predictions();
 
         // Calculate Nature's label
-        if (nat == ADVER) {
-            nat_label = my_nature->get_label(round, 
-                                            my_learner.get_e_predictions(), 
-                                            my_learner.get_weights() );
-            cout << "ADVER label: " << nat_label << endl;
-        } else if (nat == DETER) {
-            nat_label = my_nature->get_label(round);
-            cout << "DETER label: " << nat_label << endl;
-        } else {
-            nat_label = my_nature->get_label(round);
-            cout << "STOCH label: " << nat_label << endl;
+        switch(nat) {
+            case ADVER: {
+                nat_label = my_nature->get_label(round, 
+                                                my_learner.get_e_predictions(), 
+                                                my_learner.get_weights() );
+                cout << "ADVER label: " << nat_label << endl;
+            } 
+            break;
+            case DETER: {
+                nat_label = my_nature->get_label(round);
+                cout << "DETER label: " << nat_label << endl;
+            } 
+            break;
+            case STOCH: {
+                nat_label = my_nature->get_label(round);
+                cout << "STOCH label: " << nat_label << endl;
+            }
+            break;
+            case NEW_DET: {
+                nat_label = my_nature->get_label(round);
+                cout << "NEW_DET label: " << nat_label << endl;
+            }
         }
 
         // Calculate Learner's label
@@ -153,26 +168,4 @@ int main() {
     delete my_nature;
 
     return 0; 
-
-/*
-    AdversarialNature a_nat = AdversarialNature(num_rounds);
-    for (int i=0; i<num_rounds; i++) {
-        cout << a_nat.get_observations(i)[0] << endl;
-    }
-
-    int round = 0;
-    int a_label;
-    // Learner get observation from Nature
-    my_learner.set_observations(a_nat.get_observations(round));
-    // Learner ask Experts to make prediction
-    my_learner.make_predictions();
-    a_label = a_nat.get_label(round, my_learner.get_e_predictions(),
-                             my_learner.get_weights());
-    cout << "adv label: " << a_label << endl;
-    if (my_learner.calculate_label()) {
-        cout << "ERROR calculating label" << endl;
-        return 1;
-    }
-    cout << "learner label: " << my_learner.get_label() << endl;
-*/
 } 

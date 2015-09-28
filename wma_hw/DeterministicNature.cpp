@@ -1,3 +1,4 @@
+#include "definitions.h"
 #include "DeterministicNature.h"
 
 /***********************************************************************
@@ -14,7 +15,7 @@ int DeterministicNature::get_label(int round) {
  * Only "win" if game number is prime.
  */
 void DeterministicNature::calculate_label(int round) {
-    int game_num = vec_observations[round][0];
+    int game_num = vec_observations[round][OBS_GAME_ID];
 
     //int isHome = game_num % 4 == 0 ? 1:0;
     //int weather = game_num % 7;

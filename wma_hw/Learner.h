@@ -13,6 +13,7 @@
 #include "WeatherExpert.h"
 #include "FieldExpert.h"
 #include "LocationExpert.h"
+#include "SuperExpert.h"
 
 /*
  * Nature class of Prediction with Expert Advice model (PWEA).

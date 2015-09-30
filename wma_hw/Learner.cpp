@@ -5,17 +5,6 @@
  * Basic constructor that creates the 3 experts we need.
  */
 Learner::Learner() {
-    //add_diehard_expert();
-    //add_pessimist_expert();
-    //add_oddeven_expert();
-
-    //vec_e_predictions.reserve(vec_experts.size());
-    //for (int i=0; i<vec_experts.size(); i++) {
-    //    // Fill expert prediction vector with -1s.
-    //    vec_e_predictions.push_back(-1);
-    //    // Fill expert losses with 0s.
-    //    expert_loss.push_back(0);
-    //}
 
     add_all_experts();
 
@@ -33,7 +22,8 @@ Learner::~Learner() {
  *
  */
 void Learner::add_all_experts() {
-    for (int expert = DIEHARD; expert <= LOCATION; expert++) {
+    //for (int expert = DIEHARD; expert <= ODDEVEN; expert++) {
+    for (int expert = DIEHARD; expert <= SUPER; expert++) {
         add_expert(expert);
     }
 }
@@ -71,6 +61,11 @@ void Learner::add_expert(int exp_type) {
         break;
         case LOCATION: {
             std::shared_ptr<LocationExpert> p2(new LocationExpert());
+            p1=p2;
+        }
+        break;
+        case SUPER: {
+            std::shared_ptr<SuperExpert> p2(new SuperExpert());
             p1=p2;
         }
         break;

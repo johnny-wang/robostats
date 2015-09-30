@@ -83,10 +83,10 @@ void print_header_to_file(std::ofstream &myfile) {
  * MAIN
  */
 int main() {
-    float eta = 0.25;
-    int num_rounds = 100;
-    NAT_TYPE nat = NEW_DET;
-    int learner_type = WMA;
+    float eta = 0.5;
+    int num_rounds = 500;
+    NAT_TYPE nat = ADVER;
+    int learner_type = RWMA;
 
     ofstream myfile;
     myfile.open("loss.txt");

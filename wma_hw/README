@@ -10,6 +10,10 @@ learner_type can be {WMA, RWMA} for Weighted Majority Algorithm or Randomized We
 Loss and Regret values are output each round to loss.txt. The columns are:
 ROUND, LOSS, REGRET, LOSS Expert1, LOSS Expert2, LOSS Expert3
 
+The definitions of Nature types, Learners, and Experts can be found in definition.h.
+
+The types and number of Experts can be changed in Learner.cpp in the add_all_experts().
+
 ------------
 Compile
 ------------

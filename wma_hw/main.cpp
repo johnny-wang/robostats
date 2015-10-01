@@ -83,9 +83,9 @@ void print_header_to_file(std::ofstream &myfile) {
  * MAIN
  */
 int main() {
-    float eta = 0.5;
-    int num_rounds = 500;
-    NAT_TYPE nat = ADVER;
+    float eta = 0.1;
+    int num_rounds = 100;
+    NAT_TYPE nat = DETER;
     int learner_type = RWMA;
 
     ofstream myfile;

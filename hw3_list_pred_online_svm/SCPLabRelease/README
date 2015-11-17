@@ -1,0 +1,16 @@
+For List prediction, go into 'code_list_prediction' and run:
+
+>> q1_3_2
+>> q1_3_3
+
+To see the graphs run
+
+>> gen_plot.m
+
+For Online SVM go into 'code_online_svm' and run:
+
+>> q2_3
+
+To see pointclouds and graphs, run
+
+>> gen_results

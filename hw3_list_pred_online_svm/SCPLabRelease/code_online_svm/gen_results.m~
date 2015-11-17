@@ -1,0 +1,24 @@
+num_perms = 10;
+
+for i=1:num_perms
+
+    fname = sprintf('online_svm_log_%
+    load('online_svm_log_
+% Show point cloud of the two classes
+    figure    
+%     size(predictions);
+%     size(perm_classes);
+%     size(perm_classes(predictions==1));
+    size(perm_classes(predictions==-1))
+    showPointCloud(perm_classes(predictions==1, 1:3), 'green');
+    hold on
+    showPointCloud(perm_classes(predictions==-1, 1:3), 'red');
+    hold on
+    xlabel('X');
+    ylabel('Y');
+    zlabel('Z');
+    str = sprintf('Point cloud of %s vs %s', class1_name, class2_name);
+    title(str);
+    legend(class1_name, class2_name);
+    
+end

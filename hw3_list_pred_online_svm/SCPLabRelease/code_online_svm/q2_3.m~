@@ -1,0 +1,74 @@
+filename = 'online_svm_data/oakland_part3_am_rf.node_features';
+delimiterIn = ' ';
+headerlinesIn = 3;
+
+% 
+A = dlmread(filename, delimiterIn, headerlinesIn);
+
+%% Break table into classes
+% 1004: Veg
+% 1100: Wire
+% 1103: Pole
+% 1200: Ground
+% 1400: Facade
+
+label_col = 5;
+feat_col_start = 6;
+
+veg_class = A(A(:,label_col)==1004, :);    % 8322 x 15
+wire_class = A(A(:,label_col)==1100, :);   % 818 x 15
+pole_class = A(A(:,label_col)==1103, :);   % 1429 x 15
+ground_class = A(A(:,label_col)==1200, :); % 67161 x 15
+facade_class = A(A(:,label_col)==1400, :); % 12092 x 15
+
+size(veg_class,1) + size(wire_class,1) + size(pole_class,1) ...
+    + size(ground_class,1) + size(facade_class,1)  % should be 89822
+
+num_veg = size(veg_class,1);
+num_wire = size(wire_class,1);
+num_pole = size(pole_class,1);
+num_ground = size(ground_class,1);
+num_facade = size(facade_class,1);
+
+lambda = 0.1;  % regularization 
+eta = 0.5;     % for learning rate later
+
+% combine two classes
+pos_ones = ones(num_veg,1);     % make label +1
+neg_ones = -1*ones(num_wire,1);    % make label -1
+tmp_veg = veg_class;
+tmp_veg(:,label_col) = pos_ones;
+tmp_wire = wire_class;
+tmp_wire(:,label_col) = neg_ones;
+two_classes = [tmp_veg(:,label_col:end); tmp_wire(:,label_col:end)];
+size(two_classes) % 9140 x 11
+% now 1st column is label, 2-11 are features
+
+num_rows = size(two_classes,1);
+myperm = randperm(num_rows);    % to permute the rows of the classes
+
+% Extract features columns of the combined,permutated classes and also
+% extract the corresponding label to another vector
+perm_classes = two_classes(myperm,:);
+perm_labels = perm_classes(:,1);        % extract the label
+perm_classes = perm_classes(:,2:end);   % reform matrix without label
+
+num_features = size(perm_classes,2)
+wts = ones(1,num_features);
+
+% Train
+for i=1:num_rows
+    alpha = eta / sqrt(i);  % learning rate
+    % y * w * f
+    svm_total = perm_labels(i) * wts * perm_classes(i,:)';
+    if ((1 - svm_total) > 0)
+        delta_l = lambda / num_rows * wts - perm_labels(i) * perm_classes(i,:);
+    else
+        delta_l = lambda / num_rows * wts;
+    end
+    wts = wts - alpha * delta_l;
+end
+
+% Test
+wts * perm_classes'
+

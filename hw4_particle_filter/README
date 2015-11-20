@@ -1,0 +1,3 @@
+HW4 Particle Filter
+
+Copy the contents in src/ to your catkin_ws/src/. Should be able to 'catkin_make'.

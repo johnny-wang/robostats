@@ -1,0 +1,6 @@
+image: wean_map_uint8.bmp
+resolution: 0.1
+origin: [0.0, 0.0, 0.0]
+occupied_thresh: 0.9
+free_thresh: 0.2
+negate: 0

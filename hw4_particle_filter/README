@@ -1,3 +1,8 @@
 HW4 Particle Filter
 
 Copy the contents in src/ to your catkin_ws/src/. Should be able to 'catkin_make'.
+
+To see the map:
+% roslaunch particle_filter map.launch
+Open RVIZ and subscribe a map to "map" topic.
+

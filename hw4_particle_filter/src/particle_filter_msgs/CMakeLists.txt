@@ -12,10 +12,6 @@ find_package(catkin REQUIRED COMPONENTS
 add_message_files(
   FILES
   laser_odom.msg
-  distance_map.msg
-  map_x.msg
-  map_y.msg
-  ray_distances.msg
 )
 
 ## Generate added messages and services with any dependencies listed here

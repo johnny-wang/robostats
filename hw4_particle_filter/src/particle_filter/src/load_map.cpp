@@ -12,8 +12,18 @@
 #include <iostream>
 #include <fstream>
 
+#include <ctime>
+
 // Boost for string tokenizing
 #include <boost/algorithm/string.hpp>
+
+#include "particle_filter/DistanceMap.h"
+
+#define UNKNOWN -1
+#define WALL 100
+#define FREE 60
+
+#define PI 3.14159265
 
 using namespace std;
 
@@ -21,6 +31,8 @@ enum MapInfo { SIZE_X, SIZE_Y, RESOLUTION, SHIFT_X, SHIFT_Y };
 
 ros::Publisher occ_map_pub;
 ros::Publisher dist_map_pub;
+
+std::string g_map_file;
 
 void load_map(nav_msgs::OccupancyGrid &ocmap) {
     using namespace boost;
@@ -40,14 +52,14 @@ void load_map(nav_msgs::OccupancyGrid &ocmap) {
 
     int map_data_counter = 0;  // to track where to write for ocmap.data
 
-    //data_in.open(map_data);
     std::string package_path = ros::package::getPath("particle_filter");
-    std::string map_data = package_path + "/data/map/wean.dat";
+    //g_map_file = package_path + "/data/map/wean.dat";
+    g_map_file = package_path + "/data/map/" + g_map_file;
     
-    data_in.open(map_data.c_str());
+    data_in.open(g_map_file.c_str());
 
     if (data_in.is_open()) {
-        cerr << "Opening map file " << map_data << endl;
+        cout << "Opening map file " << g_map_file << endl;
 
         int line_cnt = 0;
         while (getline(data_in, line)) {
@@ -83,27 +95,33 @@ void load_map(nav_msgs::OccupancyGrid &ocmap) {
                 vector<string> strs;
                 boost::split(strs, line, boost::is_any_of(" "), boost::token_compress_on);
 
+                // Some lines has extra line element that is empty space
+                if (strs.size() == (ocmap.info.width+1)) {
+                    strs.pop_back();
+                }
+
                 vector<string>::iterator it;
 
                 for (it = strs.begin(); it != strs.end(); it++) {
                     float input = atof(it->c_str());
-                    if (input >= 0) {
-                        input = 1-input;    // b/c the file has occupancy backwards
+                    if (input >= 0) { input = 1-input;    // b/c the file has occupancy backwards
                                             // 1 = occupied; 0 = not occupied
-                        if (input > 0.9)    // occupied space
+                        if (input > 0.9) {   // occupied space
                             ocmap.data[map_data_counter++] = 100;// // map takes 0-100
-                        else if ((input <= 0.9) && (input > 0.1))  // free space
-                            ocmap.data[map_data_counter++] = 0;// // map takes 0-100
-                        else        // probability of 50 that it's occupied
+                        } else if ((input <= 0.9) && (input > 0.1)) { 
+                            // probability of 50 that it's occupied
                             ocmap.data[map_data_counter++] = 50;// // map takes 0-100
-
+                        } else {       
+                            // free space
+                            ocmap.data[map_data_counter++] = 0;// // map takes 0-100
+                        }
                         // No tier-ing
                         //ocmap.data[map_data_counter++] = input * 100;// // map takes 0-100
                     } else {
                         ocmap.data[map_data_counter++] = -1;    // -1: unknown
                     }
                 }
-                map_data_counter--;  // so each line stays at 800 items read
+                //map_data_counter--;  // so each line stays at 800 items read
             }
             line_cnt++;
         }
@@ -111,46 +129,60 @@ void load_map(nav_msgs::OccupancyGrid &ocmap) {
 
         data_in.close();
     } else {
-        cerr << "Unable to open file" << endl;
+        cerr << "Unable to open file: " << g_map_file << endl;
     }
 
     occ_map_pub.publish(ocmap);
 }
-/*
-void create_distance_map(new_map, x_size, y_size) {
-
-    for (int row = 0; row < x_size; row++) {
-        for (int col = 0; col < y_size; col++) {
-            // Calculate distance if it's a valid point
-            if ((new_map[col][row] >= 0) && (new_map[col][row] < 1)) {
-
-            } else {
-
-            }
-        }
-    }
-}
-*/
 
 // Reshape the map data into the appropriate x, y and then calculate the distance map
-void calculate_distance_map(const nav_msgs::OccupancyGrid ocmap) {
-    int x_size = ocmap.info.width;
-    int y_size = ocmap.info.height;
-    int new_map[y_size][x_size];
-
-    particle_filter_msgs::distance_map dist_map;
+void calculate_distance_map(const nav_msgs::OccupancyGrid occupancy_map) {
+    int x_size = occupancy_map.info.width;
+    int y_size = occupancy_map.info.height;
+    int ocmap[y_size][x_size];
 
     // break occupancy map into x by y
     for (int row = 0; row < x_size; row++) {
         for (int col = 0; col < y_size; col++) {
-            int tmp = ocmap.data[y_size * row + col];
-            new_map[col][row] = tmp;
-            cout << tmp << " ";
+            int tmp = occupancy_map.data[x_size * row + col];
+            ocmap[row][col] = tmp;
+            //cout << tmp << " ";
+            //cout << row << " " << col << " " << tmp << endl;
+        }
+        //cout << endl;
+    }
+
+    int num_deg = 360;
+
+    std::clock_t start;
+    double duration;
+    start = std::clock();
+
+    DistanceMap map(occupancy_map, num_deg);
+
+    duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
+
+    cout << "run time: " << duration << " sec" << endl;
+    
+
+    cout << "row dim: " << map.getRowSize() << endl;
+    cout << "col dim: " << map.getColSize() << endl;
+    cout << "num meas: " << map.getNumMeasurements() << endl;
+    cout << "dist row: " << map.getNumDistRow() << endl;
+    cout << "dist col: " << map.getNumDistCol() << endl;
+    cout << "val: " << map.getDistValue(1,1,0*PI/180) << endl;
+    cout << "val: " << map.getDistValue(1,2,0*PI/180) << endl;
+    cout << "val: " << map.getDistValue(1,3,0*PI/180) << endl;
+    cout << "val: " << map.getDistValue(1,4,0*PI/180) << endl;
+
+/*
+    for (int row = 0; row < x_size; row++) {
+        for (int col = 0; col < y_size; col++) {
+            cout << (int)map.getMapValue(row, col) << " ";
         }
         cout << endl;
     }
-
-    //create_distance_map(new_map, x_size, y_size);
+*/
 }
 
 int main(int argc, char** argv) {
@@ -161,6 +193,9 @@ int main(int argc, char** argv) {
     // latch occupancy map data
     occ_map_pub = nh.advertise<nav_msgs::OccupancyGrid>("map", 1, true);
     dist_map_pub = nh.advertise<particle_filter_msgs::distance_map>("dist_map", 1, true);
+
+    // Get filename for map file
+    nh.getParam("map_input", g_map_file);
 
     nav_msgs::OccupancyGrid ocmap;
     load_map(ocmap);

@@ -104,7 +104,7 @@ find_package(Boost REQUIRED COMPONENTS system)
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
   INCLUDE_DIRS include
-#  LIBRARIES particle_filter
+  LIBRARIES particle_filter
   CATKIN_DEPENDS nav_msgs roscpp rospy std_msgs roslib message_runtime
   DEPENDS system_lib message_runtime
 )
@@ -113,11 +113,13 @@ catkin_package(
 ## Build ##
 ###########
 
+set( PF_INCLUDE_DIRECTORIES "${PROJECT_SOURCE_DIR}/include" )
+
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 # include_directories(include)
 include_directories(
-  ${catkin_INCLUDE_DIRS}
+  ${catkin_INCLUDE_DIRS} ${PF_INCLUDE_DIRECTORIES}
 )
 
 ## Declare a C++ library
@@ -131,7 +133,7 @@ include_directories(
 # add_dependencies(particle_filter ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a C++ executable
-add_executable(load_map_node src/load_map.cpp)
+add_executable(load_map_node src/load_map.cpp src/DistanceMap.cpp)
 add_executable(load_data_node src/load_data.cpp)
 
 ## Add cmake target dependencies of the executable
@@ -140,7 +142,7 @@ add_executable(load_data_node src/load_data.cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(load_map_node
-  ${catkin_LIBRARIES}
+  ${catkin_LIBRARIES} ${PF_INCLUDE_DIRECTORIES}
 )
 target_link_libraries(load_data_node
   ${catkin_LIBRARIES}

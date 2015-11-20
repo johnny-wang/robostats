@@ -1,6 +1,9 @@
 <launch>
 
+<!--
+    <param name="map_input" value="testmap.dat" />
+-->
+    <param name="map_input" value="wean.dat" />
     <node name="load_map_node" type="load_map_node" pkg="particle_filter" output="screen">
-        <param name="log_input" value="ascii-robotdata4.log" />
     </node>
 </launch>

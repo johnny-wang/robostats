@@ -10,6 +10,10 @@ static const int FREE = 0;
 
 //#define DEBUG
 
+DistanceMap::DistanceMap()
+{
+}
+
 /*
  * (0, 0) row/col starts at the UPPER LEFT corner of the map.
  */

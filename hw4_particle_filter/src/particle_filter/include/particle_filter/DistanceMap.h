@@ -15,6 +15,7 @@ class DistanceMap {
 
 public:
 
+    DistanceMap();
     DistanceMap(nav_msgs::OccupancyGrid map, int num_degree);
 
     unsigned int getRowSize();

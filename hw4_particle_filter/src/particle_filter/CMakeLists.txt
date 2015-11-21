@@ -135,6 +135,7 @@ include_directories(
 ## Declare a C++ executable
 add_executable(load_map_node src/load_map.cpp src/DistanceMap.cpp)
 add_executable(load_data_node src/load_data.cpp)
+add_executable(main_node src/main.cpp src/DistanceMap.cpp src/ParticleFilter.cpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
@@ -146,6 +147,9 @@ target_link_libraries(load_map_node
 )
 target_link_libraries(load_data_node
   ${catkin_LIBRARIES}
+)
+target_link_libraries(main_node
+  ${catkin_LIBRARIES} ${PF_INCLUDE_DIRECTORIES}
 )
 
 ## Compile with RELEASE flag

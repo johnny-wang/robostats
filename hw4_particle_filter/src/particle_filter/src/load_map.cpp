@@ -32,6 +32,7 @@ enum MapInfo { SIZE_X, SIZE_Y, RESOLUTION, SHIFT_X, SHIFT_Y };
 ros::Publisher occ_map_pub;
 ros::Publisher dist_map_pub;
 
+std::string g_package_path = ros::package::getPath("particle_filter");
 std::string g_map_file;
 
 void load_map(nav_msgs::OccupancyGrid &ocmap) {
@@ -52,14 +53,13 @@ void load_map(nav_msgs::OccupancyGrid &ocmap) {
 
     int map_data_counter = 0;  // to track where to write for ocmap.data
 
-    std::string package_path = ros::package::getPath("particle_filter");
-    //g_map_file = package_path + "/data/map/wean.dat";
-    g_map_file = package_path + "/data/map/" + g_map_file;
+    //g_map_file = g_package_path + "/data/map/wean.dat";
+    std::string map_file = g_package_path + "/data/map/" + g_map_file;
     
-    data_in.open(g_map_file.c_str());
+    data_in.open(map_file.c_str());
 
     if (data_in.is_open()) {
-        cout << "Opening map file " << g_map_file << endl;
+        cout << "Opening map file " << map_file << endl;
 
         int line_cnt = 0;
         while (getline(data_in, line)) {
@@ -152,13 +152,21 @@ void calculate_distance_map(const nav_msgs::OccupancyGrid occupancy_map) {
         //cout << endl;
     }
 
-    int num_deg = 360;
+    int num_deg;
+    if (g_map_file.compare("testmap.dat") == 0) {
+        num_deg = 4;
+    } else {
+        num_deg = 360;
+    }
+
+    DistanceMap map(occupancy_map, num_deg);
 
     std::clock_t start;
     double duration;
     start = std::clock();
 
-    DistanceMap map(occupancy_map, num_deg);
+    std::string save_file = g_package_path + "/data/map/dist_map.txt";
+    map.loadMap(save_file);
 
     duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
 
@@ -175,6 +183,7 @@ void calculate_distance_map(const nav_msgs::OccupancyGrid occupancy_map) {
     cout << "val: " << map.getDistValue(1,3,0*PI/180) << endl;
     cout << "val: " << map.getDistValue(1,4,0*PI/180) << endl;
 
+    map.saveMap(save_file);
 /*
     for (int row = 0; row < x_size; row++) {
         for (int col = 0; col < y_size; col++) {

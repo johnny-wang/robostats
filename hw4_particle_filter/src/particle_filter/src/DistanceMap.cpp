@@ -23,7 +23,6 @@ DistanceMap::DistanceMap(nav_msgs::OccupancyGrid ocmap, int num_degree)
       _angle_step_size(2*PI / num_degree)
 {
     initialize(ocmap);
-    create_distance_map();
 }
 
 unsigned int DistanceMap::getRowSize() {
@@ -55,11 +54,84 @@ float DistanceMap::getDistValue(int row, int col, float theta) {
 }
 
 unsigned int DistanceMap::getNumDistRow() {
-    return _oc_map.size();
+    return _dist_map.size();
 }
 
 unsigned int DistanceMap::getNumDistCol() {
-    return _oc_map[0].size();
+    return _dist_map[0].size();
+}
+
+/* 
+ * Load the saved map according to the format specified in saveMap() comment.
+ */
+void DistanceMap::loadMap(std::string filename) {
+    ifstream data_in;
+    std::string line;
+
+    data_in.open(filename.c_str());
+
+    if (data_in.is_open()) {
+        cout << "Loading distance map data from " << filename << endl;
+
+        std::vector< std::vector<float> > col_data;
+        // Loop through each line of the file
+        while(getline(data_in, line)) {
+
+            vector<string> strs;
+            boost::split(strs, line, boost::is_any_of(" "), boost::token_compress_on);
+
+            int row = atoi(strs[0].c_str());
+            int col = atoi(strs[1].c_str());
+
+            std::vector<float> dist_val;
+            for (int j = 2; j < strs.size(); j++) {
+                dist_val.push_back(atof(strs[j].c_str()));
+            }
+
+            col_data.push_back(dist_val);
+
+            if (col == _col_dim-1) {
+                _dist_map.push_back(col_data);
+                col_data.clear();
+            }
+        }
+
+    } else {
+    // file doesn't exist, create the distance map then save it.
+        cout << "File doesn't exist, creating new distance map" << endl;
+        create_distance_map();
+        saveMap(filename);
+    }
+    data_in.close();
+}
+
+/* 
+ * Save the distance map to file so we don't have to calculate it everytime.
+ * Each row of the file will be saved in this format:
+ *   [row num] [col num] [_dist_map[0]] [_dist_map[1]] [_dist_map[2]] ...
+ */
+void DistanceMap::saveMap(std::string filename) {
+    ofstream data_out;
+    data_out.open(filename.c_str());
+
+    if (!data_out.is_open()) {
+        cerr << "ERROR: Unable to open file: " << filename << endl;
+        return;
+    }
+
+    // Write to file in this format:
+    for (int row = 0; row < _row_dim; row++) {
+        for (int col = 0; col < _col_dim; col++) {
+            data_out << row << " " << col;
+            for (int dist = 0; dist < _num_measurements; dist++) {
+                data_out << " " << _dist_map[row][col][dist];
+            }
+            data_out << endl;
+        }
+    }
+
+    cout << "Distance map saved to " << filename << endl;
+    data_out.close();
 }
 
 /*********************************************************************/
@@ -118,7 +190,7 @@ void DistanceMap::create_distance_map() {
 #endif 
                 }
 #ifdef DEBUG
-                    cout << "final angle: " << angle << endl;
+                cout << "final angle: " << angle << endl;
 #endif 
 
             }

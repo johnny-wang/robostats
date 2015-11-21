@@ -5,6 +5,11 @@
 
 #include <stdio.h>
 #include <math.h>
+// basic file operations
+#include <iostream>
+#include <fstream>
+// Boost for string tokenizing
+#include <boost/algorithm/string.hpp>
 
 class DistanceMap {
 
@@ -20,6 +25,9 @@ public:
     unsigned int getNumDistCol();
     unsigned int getMapValue(int row, int col);
     float getDistValue(int row, int col, float theta);
+
+    void loadMap(std::string filename);
+    void saveMap(std::string filename);
 
 protected:
 

@@ -10,7 +10,11 @@ static const int FREE = 0;
 
 //#define DEBUG
 
-DistanceMap::DistanceMap()
+DistanceMap::DistanceMap() :
+    _map_loaded(false),
+    _package_path(ros::package::getPath("particle_filter")),
+    _ray_step_size(0.25f)  // Half the resolution. Resolution is 10cm meaning each map square is 
+                            // 10cm x 10cm. Our step size will be 5cm or 0.5 of map square.
 {
 }
 
@@ -26,7 +30,9 @@ DistanceMap::DistanceMap(nav_msgs::OccupancyGrid ocmap, int num_degree)
                               // 10cm x 10cm. Our step size will be 5cm or 0.5 of map square.
       _angle_step_size(2*PI / num_degree)
 {
-    initialize(ocmap);
+    _nav_occ_map = ocmap;
+    _map_loaded = true;
+    initialize();
 }
 
 unsigned int DistanceMap::getRowSize() {
@@ -66,16 +72,24 @@ unsigned int DistanceMap::getNumDistCol() {
 }
 
 /* 
- * Load the saved map according to the format specified in saveMap() comment.
+ * Load the saved map according to the format specified in saveDistMap() comment.
  */
-void DistanceMap::loadMap(std::string filename) {
+void DistanceMap::loadDistMap(std::string filename) {
     ifstream data_in;
     std::string line;
 
-    data_in.open(filename.c_str());
+    // Load occupancy map if not already loaded
+    if (!_map_loaded) {
+        cerr << "ERROR: need to load occupancy map first!" << endl;
+        exit(-1);
+    }
+
+    std::string fname = _package_path + "/data/map/" + filename;
+
+    data_in.open(fname.c_str());
 
     if (data_in.is_open()) {
-        cout << "Loading distance map data from " << filename << endl;
+        cout << "Loading distance map data from " << fname << endl;
 
         std::vector< std::vector<float> > col_data;
         // Loop through each line of the file
@@ -102,11 +116,120 @@ void DistanceMap::loadMap(std::string filename) {
 
     } else {
     // file doesn't exist, create the distance map then save it.
-        cout << "File doesn't exist, creating new distance map" << endl;
+        cout << "File doesn't exist: " << fname << endl;
+        cout << "Creating new distance map" << endl;
         create_distance_map();
-        saveMap(filename);
+        saveDistMap(filename);
     }
+    cout << "Finished loading" << endl;
     data_in.close();
+}
+
+void DistanceMap::loadOccMap(std::string filename) {
+    ifstream data_in;
+    std::string line;
+    int map_data_counter = 0;  // to track where to write for _nav_occ_map.data
+
+    /* First few rows of the map data:
+    0 = size_x
+    1 = size_y
+    2 = resolution
+    3 = shift_x
+    4 = shift_y
+    */
+    vector<int> map_info;
+    _nav_occ_map.header.frame_id = "/map";
+    _nav_occ_map.header.stamp = ros::Time::now();
+
+    std::string map_file = _package_path + "/data/map/" + filename;
+
+    data_in.open(map_file.c_str());
+
+    if (data_in.is_open()) {
+        cout << "Opening map file " << map_file << endl;
+
+        int line_cnt = 0;
+        while (getline(data_in, line)) {
+
+            /* Parse the first 5 lines:
+             * robot_specifications->global_mapsize_x                 8000
+             * robot_specifications->global_mapsize_y                 8000
+             * robot_specifications->resolution                       10
+             * robot_specifications->autoshifted_x                    0
+             * robot_specifications->autoshifted_y                    0
+             */
+            if (line_cnt < 5) {
+                cout << line << endl;
+
+                vector<string> strs;
+                boost::split(strs, line, boost::is_any_of(" "), boost::token_compress_on);
+
+                string it = strs.back();
+                cout << atoi(it.c_str()) << endl;
+                map_info.push_back(atoi(it.c_str()));
+            } else if (line_cnt == 5) {
+            // Set up occupancy map after reading in the map info
+            // line 5 has empty line
+                _nav_occ_map.info.resolution = map_info[RESOLUTION];
+                _nav_occ_map.info.width = map_info[SIZE_X] / map_info[RESOLUTION];
+                _nav_occ_map.info.height = map_info[SIZE_Y] / map_info[RESOLUTION];
+                _nav_occ_map.data.resize( _nav_occ_map.info.height * _nav_occ_map.info.width );
+                _col_dim = _nav_occ_map.info.width;
+                _row_dim = _nav_occ_map.info.height;
+                _resolution = _nav_occ_map.info.resolution;
+
+            } else if (line_cnt == 6) {
+            // this line has "global_map[0]: 800 800"
+            } else {
+            // fill in the occupancy map by row 
+                vector<string> strs;
+                boost::split(strs, line, boost::is_any_of(" "), boost::token_compress_on);
+
+                // Some lines has extra line element that is empty space
+                if (strs.size() == (_nav_occ_map.info.width+1)) {
+                    strs.pop_back();
+                }
+
+                vector<string>::iterator it;
+
+                for (it = strs.begin(); it != strs.end(); it++) {
+                    float input = atof(it->c_str());
+                    if (input >= 0) { input = 1-input;    // b/c the file has occupancy backwards
+                                            // 1 = occupied; 0 = not occupied
+                        if (input > 0.9) {   // occupied space
+                            _nav_occ_map.data[map_data_counter++] = 100;// // map takes 0-100
+                        } else if ((input <= 0.9) && (input > 0.1)) {
+                            // probability of 50 that it's occupied
+                            _nav_occ_map.data[map_data_counter++] = 50;// // map takes 0-100
+                        } else {
+                            // free space
+                            _nav_occ_map.data[map_data_counter++] = 0;// // map takes 0-100
+                        }
+                        // No tier-ing
+                        //_nav_occ_map.data[map_data_counter++] = input * 100;// // map takes 0-100
+                    } else {
+                        _nav_occ_map.data[map_data_counter++] = -1;    // -1: unknown
+                    }
+                }  // end for loop of each tokens
+            }  // end line
+            line_cnt++;
+        }
+        cout << "line count: " << line_cnt << endl;
+
+        data_in.close();
+    } else {
+        cerr << "Unable to open file: " << map_file << endl;
+        exit(-1);
+    }
+    _map_loaded = true;
+}
+
+void DistanceMap::loadMaps(std::string occ_map, std::string dist_map, int num_degrees, float ray_step) {
+    setNumDegrees(num_degrees);
+    setRayStepSize(ray_step);
+    loadOccMap(occ_map);
+    initialize();
+    loadDistMap(dist_map);
 }
 
 /* 
@@ -114,8 +237,9 @@ void DistanceMap::loadMap(std::string filename) {
  * Each row of the file will be saved in this format:
  *   [row num] [col num] [_dist_map[0]] [_dist_map[1]] [_dist_map[2]] ...
  */
-void DistanceMap::saveMap(std::string filename) {
+void DistanceMap::saveDistMap(std::string filename) {
     ofstream data_out;
+    filename = _package_path + "/data/map/" + filename;
     data_out.open(filename.c_str());
 
     if (!data_out.is_open()) {
@@ -138,17 +262,32 @@ void DistanceMap::saveMap(std::string filename) {
     data_out.close();
 }
 
+void DistanceMap::setNumDegrees(int num_degrees) {
+    _num_measurements = num_degrees;
+    _angle_step_size = 2*PI / num_degrees;
+}
+
+void DistanceMap::setRayStepSize(float ray_step) {
+    _ray_step_size = ray_step;
+}
+
 /*********************************************************************/
 
 /*
  * Reshape the occupancy map into 2D matrix of vectors so we can create a
  * distance map with it later. 
  */
-void DistanceMap::initialize(nav_msgs::OccupancyGrid ocmap) {
+void DistanceMap::initialize() {
+
+    if (!_map_loaded) {
+        cerr << "ERROR: Need to load occupancy map first!" << endl;
+        exit(-1);
+    }
+
     for (int row = 0; row < _row_dim; row++) {
         std::vector<int> col_data;
         for (int col = 0; col < _row_dim; col++) {
-            int tmp = ocmap.data[_row_dim * row + col];
+            int tmp = _nav_occ_map.data[_row_dim * row + col];
             col_data.push_back(tmp);
         }
         _oc_map.push_back(col_data);
@@ -166,6 +305,7 @@ void DistanceMap::initialize(nav_msgs::OccupancyGrid ocmap) {
  * This is because cos(0) is 1, which is our 'x' direction.
  */
 void DistanceMap::create_distance_map() {
+//#define DEBUG
 
     for (int row = 0; row < _row_dim; row++) {
         std::vector< std::vector<float> > col_data;
@@ -190,7 +330,7 @@ void DistanceMap::create_distance_map() {
                     dist[ray] = ray_dist;
                     angle += _angle_step_size;
 #ifdef DEBUG
-                    cout << "ray_dist: " << ray_dist << endl;
+                    cout << "r: " << ray << " ray_dist: " << ray_dist << endl;
 #endif 
                 }
 #ifdef DEBUG
@@ -219,14 +359,15 @@ float DistanceMap::calculate_dist(int row, int col, float angle) {
     float step_col = _ray_step_size * cos(angle);
     float step_row = _ray_step_size * sin(angle);
 
-#ifdef DEBUG
+#ifdef DEBUG_1
     cout << "r: " << row << " c: " << col << " a: " << angle << endl;
+    cout << "   " << _col_dim << " " << _row_dim << endl;
 #endif
     cur_col += step_col;
     cur_row += step_row;
 
     // Make sure within map boundaries
-    while ((cur_col >= 0) && (cur_col < _row_dim) && (cur_row >= 0) && (cur_row < _row_dim)) {
+    while ((cur_col >= 0) && (cur_col < _col_dim) && (cur_row >= 0) && (cur_row < _row_dim)) {
         int map_val = getMapValue(int(cur_row), int(cur_col));
 
         if ((map_val == WALL)) {
@@ -238,10 +379,28 @@ float DistanceMap::calculate_dist(int row, int col, float angle) {
 
 #ifdef DEBUG
     cout << "cur_col: " << cur_col << " cur_row: " << cur_row << endl;
+    cout << "col: " << col << " row: " << row << endl;
 #endif
 
     float x_squared = (cur_col - float(col)) * (cur_col - float(col));
     float y_squared = (cur_row - float(row)) * (cur_row - float(row));
 
     return sqrt(x_squared + y_squared);
+}
+
+void DistanceMap::print_dist_map() {
+    cout << "Distance Map size" << endl;
+    cout << _dist_map.size() << endl;
+    cout << _dist_map[0].size() << endl;
+
+    for (int i = 0; i < _dist_map.size(); i++) {
+        for (int j = 0; j < _dist_map[0].size(); j++) {
+
+        }
+    }
+}
+
+void DistanceMap::print_occ_map() {
+    cout << "Occupancy Map size" << endl;
+    cout << _nav_occ_map.data.size() << endl;
 }

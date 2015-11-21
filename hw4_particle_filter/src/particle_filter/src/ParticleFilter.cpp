@@ -7,19 +7,27 @@ ParticleFilter::ParticleFilter(
         std::string odom_topic,
         int msg_queue_size,
         int num_particles,
-        std::string map_file
+        std::string occ_map_file,
+        std::string dist_map_file,
+        int num_degrees,
+        float ray_step_size
     ) : // initialization list
     _laser_odom(nh.subscribe(laser_topic, msg_queue_size, &ParticleFilter::laser_odom_callback, this)),
     _odom(nh.subscribe(odom_topic, msg_queue_size, &ParticleFilter::laser_odom_callback, this)),
-    _num_particles(num_particles),
-    _map_file(map_file)
+    _num_particles(num_particles)
 {
-    initialize();
+    initialize(occ_map_file, dist_map_file, num_degrees, ray_step_size);
 }
 
-bool ParticleFilter::initialize() 
+bool ParticleFilter::initialize(
+    std::string occ_map, 
+    std::string dist_map, 
+    int num_degrees, 
+    float ray_step_size) 
 {
-    // Load Map
+    // Load Map (occupancy and distance maps)
+std::cout << occ_map << " " << dist_map << std::endl;
+    _map.loadMaps(occ_map, dist_map, num_degrees, ray_step_size);
 
     // create RNG, uniform & normal
 

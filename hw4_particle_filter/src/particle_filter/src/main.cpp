@@ -15,7 +15,12 @@ int main(int argc, char** argv) {
     std::string odom_topic = "odom";
     int msg_queue_size = 1000;
     int num_particles = 4000;
-    std::string map_name = "test.dat";
+    //std::string occ_map_name = "testmap.dat";
+    //std::string dist_map_name = "testmap.dat.txt";
+    std::string occ_map_name = "wean.dat";
+    std::string dist_map_name = "wean.dat.txt";
+    int num_degrees = 360;
+    float ray_step = 0.25f;
 
     ParticleFilter *pf = new ParticleFilter(
         nh,
@@ -23,7 +28,10 @@ int main(int argc, char** argv) {
         odom_topic,
         msg_queue_size,
         num_particles,
-        map_name
+        occ_map_name,
+        dist_map_name,
+        num_degrees,
+        ray_step
         );
 
     while (nh.ok()) {

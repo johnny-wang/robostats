@@ -7,7 +7,6 @@
 #include <nav_msgs/OccupancyGrid.h>
 
 #include <particle_filter_msgs/distance_map.h>
-
 // basic file operations
 #include <iostream>
 #include <fstream>
@@ -26,8 +25,6 @@
 #define PI 3.14159265
 
 using namespace std;
-
-enum MapInfo { SIZE_X, SIZE_Y, RESOLUTION, SHIFT_X, SHIFT_Y };
 
 ros::Publisher occ_map_pub;
 ros::Publisher dist_map_pub;
@@ -166,7 +163,7 @@ void calculate_distance_map(const nav_msgs::OccupancyGrid occupancy_map) {
     start = std::clock();
 
     std::string save_file = g_package_path + "/data/map/dist_map.txt";
-    map.loadMap(save_file);
+    map.loadDistMap(save_file);
 
     duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
 
@@ -183,7 +180,7 @@ void calculate_distance_map(const nav_msgs::OccupancyGrid occupancy_map) {
     cout << "val: " << map.getDistValue(1,3,0*PI/180) << endl;
     cout << "val: " << map.getDistValue(1,4,0*PI/180) << endl;
 
-    map.saveMap(save_file);
+    map.saveDistMap(save_file);
 /*
     for (int row = 0; row < x_size; row++) {
         for (int col = 0; col < y_size; col++) {

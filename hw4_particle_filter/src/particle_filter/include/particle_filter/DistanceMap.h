@@ -1,6 +1,7 @@
 #ifndef __DISTANCE_MAP_H__
 #define __DISTANCE_MAP_H__
 
+#include <ros/ros.h>
 #include <ros/package.h>
 #include <nav_msgs/OccupancyGrid.h>
 
@@ -30,7 +31,11 @@ public:
     unsigned int getMapValue(int row, int col);
     float getDistValue(int row, int col, float theta);
 
-    void loadMaps(std::string occ_map, std::string dist_map, int num_degree, float ray_step);
+    void loadMaps(ros::NodeHandle nh, 
+        std::string occ_map, 
+        std::string dist_map, 
+        int num_degree, 
+        float ray_step);
     void loadDistMap(std::string filename);
     void loadOccMap(std::string filename);
     void saveDistMap(std::string filename);
@@ -54,13 +59,15 @@ protected:
 
     bool _map_loaded;
 
-    int _row_dim;
-    int _col_dim;
+    int _row_dim, _row_min;
+    int _col_dim, _col_min;
     int _resolution;
     int _num_measurements;
 
     float _ray_step_size;
     float _angle_step_size;
+
+    ros::Publisher _occ_map_pub;    // publish occupancy map once with latch
 };
 
 #endif

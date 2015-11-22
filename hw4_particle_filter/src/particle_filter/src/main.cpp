@@ -15,10 +15,10 @@ int main(int argc, char** argv) {
     std::string odom_topic = "odom";
     int msg_queue_size = 1000;
     int num_particles = 4000;
-    //std::string occ_map_name = "testmap.dat";
-    //std::string dist_map_name = "testmap.dat.txt";
-    std::string occ_map_name = "wean.dat";
-    std::string dist_map_name = "wean.dat.txt";
+    std::string occ_map_name = "testmap.dat";
+    std::string dist_map_name = "testmap.dat.txt";
+    //std::string occ_map_name = "wean.dat";
+    //std::string dist_map_name = "wean.dat.txt";
     int num_degrees = 360;
     float ray_step = 0.25f;
 

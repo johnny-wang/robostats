@@ -13,8 +13,10 @@ static const int FREE = 0;
 DistanceMap::DistanceMap() :
     _map_loaded(false),
     _package_path(ros::package::getPath("particle_filter")),
-    _ray_step_size(0.25f)  // Half the resolution. Resolution is 10cm meaning each map square is 
+    _ray_step_size(0.25f),  // Half the resolution. Resolution is 10cm meaning each map square is 
                             // 10cm x 10cm. Our step size will be 5cm or 0.5 of map square.
+    _row_min(0),
+    _col_min(0)
 {
 }
 
@@ -28,7 +30,9 @@ DistanceMap::DistanceMap(nav_msgs::OccupancyGrid ocmap, int num_degree)
       _num_measurements(num_degree),     // one measurement per degree
       _ray_step_size(0.25f),  // Half the resolution. Resolution is 10cm meaning each map square is 
                               // 10cm x 10cm. Our step size will be 5cm or 0.5 of map square.
-      _angle_step_size(2*PI / num_degree)
+      _angle_step_size(2*PI / num_degree),
+      _row_min(0),
+      _col_min(0)
 {
     _nav_occ_map = ocmap;
     _map_loaded = true;
@@ -93,6 +97,7 @@ void DistanceMap::loadDistMap(std::string filename) {
 
         std::vector< std::vector<float> > col_data;
         // Loop through each line of the file
+        int count = 0;
         while(getline(data_in, line)) {
 
             vector<string> strs;
@@ -111,6 +116,11 @@ void DistanceMap::loadDistMap(std::string filename) {
             if (col == _col_dim-1) {
                 _dist_map.push_back(col_data);
                 col_data.clear();
+            }
+            count++;
+            // Just so we know the program didn't hang.
+            if ((count % 2500) == 0) {
+                cout << "Reading file line: " << count << endl;
             }
         }
 
@@ -222,9 +232,16 @@ void DistanceMap::loadOccMap(std::string filename) {
         exit(-1);
     }
     _map_loaded = true;
+    _occ_map_pub.publish(_nav_occ_map);
 }
 
-void DistanceMap::loadMaps(std::string occ_map, std::string dist_map, int num_degrees, float ray_step) {
+void DistanceMap::loadMaps(
+        ros::NodeHandle nh, 
+        std::string occ_map, 
+        std::string dist_map, 
+        int num_degrees, 
+        float ray_step) {
+    _occ_map_pub = nh.advertise<nav_msgs::OccupancyGrid>("/map", 1, true);
     setNumDegrees(num_degrees);
     setRayStepSize(ray_step);
     loadOccMap(occ_map);

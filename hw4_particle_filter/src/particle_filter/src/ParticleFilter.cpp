@@ -5,6 +5,8 @@ static const int UNKNOWN = -1;
 static const int WALL = 100;
 static const int FREE = 0;
 
+//#define DEBUG_INIT
+
 ParticleFilter::ParticleFilter(
         ros::NodeHandle nh, 
         std::string laser_topic, 
@@ -61,28 +63,30 @@ void ParticleFilter::createMarker(visualization_msgs::Marker &marker, int type) 
     marker.header.stamp = ros::Time::now();
     marker.action = visualization_msgs::Marker::ADD;
 
+    int res = _map.getResolution();
+
     // points
     if (type == 1) {
         marker.id = 0;
         marker.type = visualization_msgs::Marker::POINTS;
         marker.ns = "particle_pts";
 
-        marker.scale.x = 0.1;
-        marker.scale.y = 0.1;
-        marker.scale.z = 0.1;
+        marker.scale.x = 0.5 * res;
+        marker.scale.y = 0.5 * res;
+        marker.scale.z = 0.5 * res;
 
         marker.color.r = 1.0f;
         marker.color.g = 0.0f;
         marker.color.b = 0.0f;
     } else {
-    // lines
+    // lines to show orientation
         marker.id = 1;
         marker.type = visualization_msgs::Marker::LINE_LIST;
         marker.ns = "orientation_lines";
 
-        marker.scale.x = 0.01;
-        marker.scale.y = 0.01;
-        marker.scale.z = 0.01;
+        marker.scale.x = 0.05 * res;
+        marker.scale.y = 0.05 * res;
+        marker.scale.z = 0.05 * res;
 
         marker.color.r = 0.0f;
         marker.color.g = 1.0f;
@@ -95,15 +99,21 @@ void ParticleFilter::createMarker(visualization_msgs::Marker &marker, int type) 
 
 void ParticleFilter::initializeParticles()
 {
-    int col_min = 0, row_min = 0;
-    int col_max = _map.getColSize();
-    int row_max = _map.getRowSize();
+    int y_min = 0, x_min = 0;
+    int y_max = _map.getYSize();
+    int x_max = _map.getXSize();
     // create RNG, uniform & normal for each of the x,y,theta
     unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
     std::default_random_engine generator(seed);
-    std::uniform_real_distribution<double> rng1(col_min, col_max);
-    std::uniform_real_distribution<double> rng2(row_min, row_max);
+    //std::uniform_real_distribution<double> rng1(y_min*res, y_max*res);
+    //std::uniform_real_distribution<double> rng2(x_min*res, x_max*res);
+    std::uniform_real_distribution<double> rng1(y_min, y_max);
+    std::uniform_real_distribution<double> rng2(x_min, x_max);
     std::uniform_real_distribution<double> rng3(-M_PI, M_PI);
+
+#ifdef DEBUG_INIT
+    std::cout << "Initializing particles" << std::endl;
+#endif
 
     // Resample until we get particle in free space
     int id_cnt = 0;
@@ -117,8 +127,10 @@ void ParticleFilter::initializeParticles()
             p.particle_id = id_cnt;
             p.weight = 1.0 / _num_particles;
             _particles_list.push_back(p);
-            //std::cout << "Adding particle: " << std::endl;
-            //printParticle(p);
+#ifdef DEBUG_INIT
+            std::cout << "Adding particle: " << std::endl;
+            printParticle(p);
+#endif
             i++;
             id_cnt++;
         }
@@ -134,14 +146,7 @@ void ParticleFilter::printParticle(particle_filter_msgs::particle p) {
 }
 
 void ParticleFilter::visualizeParticles() {
-
-    //_points_marker.action = 3;
-    //_lines_marker.action = 3;
-    //_particles_pub.publish(_points_marker);
-    //_lines_pub.publish(_lines_marker);
-
-    //_points_marker.points.clear();
-    //_lines_marker.points.clear();
+    int res = _map.getResolution();
 
     createMarker(_points_marker, 1);
     createMarker(_lines_marker, 2);
@@ -151,15 +156,15 @@ void ParticleFilter::visualizeParticles() {
     for (int i = 0; i < _particles_list.size(); i++) {
         geometry_msgs::Point p;
         // Set position and orientation of particle
-        p.x = _particles_list[i].pose.x;
-        p.y = _particles_list[i].pose.y;
+        p.x = _particles_list[i].pose.x * res;
+        p.y = _particles_list[i].pose.y * res;
         p.z = 0;
         p_vec.push_back(p);
 
         // Draw line (2 points) to show orientation
         geometry_msgs::Point p1;
-        p1.x = 0.1*cos(_particles_list[i].pose.theta) + p.x;
-        p1.y = 0.1*sin(_particles_list[i].pose.theta) + p.y;
+        p1.x = 0.3*cos(_particles_list[i].pose.theta)*res + p.x;
+        p1.y = 0.3*sin(_particles_list[i].pose.theta)*res + p.y;
         p1.z = 0;
         l_vec.push_back(p);
         l_vec.push_back(p1);
@@ -179,8 +184,10 @@ void ParticleFilter::visualizeParticles() {
     _points_marker.points = p_vec;
     _lines_marker.points = l_vec;
 
-    //printf("p size: %lu\n", p_vec.size());
-    //printf("l size: %lu\n", l_vec.size());
+#ifdef DEBUG_INIT
+    printf("p size: %lu\n", p_vec.size());
+    printf("l size: %lu\n", l_vec.size());
+#endif
 
     _particles_pub.publish(_points_marker);
     _lines_pub.publish(_lines_marker);

@@ -15,63 +15,67 @@ DistanceMap::DistanceMap() :
     _package_path(ros::package::getPath("particle_filter")),
     _ray_step_size(0.25f),  // Half the resolution. Resolution is 10cm meaning each map square is 
                             // 10cm x 10cm. Our step size will be 5cm or 0.5 of map square.
-    _row_min(0),
-    _col_min(0)
+    _x_min(0),
+    _y_min(0)
 {
 }
 
 /*
- * (0, 0) row/col starts at the UPPER LEFT corner of the map.
+ * (0, 0) x/y starts at the UPPER LEFT corner of the map.
  */
 DistanceMap::DistanceMap(nav_msgs::OccupancyGrid ocmap, int num_degree)
-    : _col_dim(ocmap.info.width),
-      _row_dim(ocmap.info.height),
+    : _y_max(ocmap.info.width),
+      _x_max(ocmap.info.height),
       _resolution(ocmap.info.resolution),
       _num_measurements(num_degree),     // one measurement per degree
       _ray_step_size(0.25f),  // Half the resolution. Resolution is 10cm meaning each map square is 
                               // 10cm x 10cm. Our step size will be 5cm or 0.5 of map square.
       _angle_step_size(2*PI / num_degree),
-      _row_min(0),
-      _col_min(0)
+      _x_min(0),
+      _y_min(0)
 {
     _nav_occ_map = ocmap;
     _map_loaded = true;
     initialize();
 }
 
-unsigned int DistanceMap::getRowSize() {
-    return _row_dim;
+unsigned int DistanceMap::getResolution() {
+    return _resolution;
 }
 
-unsigned int DistanceMap::getColSize() {
-    return _col_dim;
+unsigned int DistanceMap::getXSize() {
+    return _x_max;
+}
+
+unsigned int DistanceMap::getYSize() {
+    return _y_max;
 }
 
 unsigned int DistanceMap::getNumMeasurements() {
     return _num_measurements;
 }
 
-unsigned int DistanceMap::getMapValue(int row, int col) {
-    return _oc_map[row][col];
+unsigned int DistanceMap::getMapValue(int x, int y) {
+    return _oc_map[x][y];
 }
 
 /*
  * Theta is in RADIANS!!!
  */
-float DistanceMap::getDistValue(int row, int col, float theta) {
+float DistanceMap::getDistValue(int x, int y, float theta) {
     // Addition part is to help round to nearest angle
     int multiplier = (theta + (_angle_step_size/2)) / _angle_step_size;
 #ifdef DEBUG
     printf("mod of %f %f: %d\n", theta, _angle_step_size, multiplier);
 #endif
-    return _dist_map[row][col][multiplier];
+    return _dist_map[x][y][multiplier];
 }
 
-unsigned int DistanceMap::getNumDistRow() {
+unsigned int DistanceMap::getNumDistX() {
     return _dist_map.size();
 }
 
-unsigned int DistanceMap::getNumDistCol() {
+unsigned int DistanceMap::getNumDistY() {
     return _dist_map[0].size();
 }
 
@@ -95,7 +99,7 @@ void DistanceMap::loadDistMap(std::string filename) {
     if (data_in.is_open()) {
         cout << "Loading distance map data from " << fname << endl;
 
-        std::vector< std::vector<float> > col_data;
+        std::vector< std::vector<float> > y_data;
         // Loop through each line of the file
         int count = 0;
         while(getline(data_in, line)) {
@@ -103,23 +107,23 @@ void DistanceMap::loadDistMap(std::string filename) {
             vector<string> strs;
             boost::split(strs, line, boost::is_any_of(" "), boost::token_compress_on);
 
-            int row = atoi(strs[0].c_str());
-            int col = atoi(strs[1].c_str());
+            int x = atoi(strs[0].c_str());
+            int y = atoi(strs[1].c_str());
 
             std::vector<float> dist_val;
             for (int j = 2; j < strs.size(); j++) {
                 dist_val.push_back(atof(strs[j].c_str()));
             }
 
-            col_data.push_back(dist_val);
+            y_data.push_back(dist_val);
 
-            if (col == _col_dim-1) {
-                _dist_map.push_back(col_data);
-                col_data.clear();
+            if (y == _y_max-1) {
+                _dist_map.push_back(y_data);
+                y_data.clear();
             }
             count++;
             // Just so we know the program didn't hang.
-            if ((count % 2500) == 0) {
+            if ((count % 5000) == 0) {
                 cout << "Reading file line: " << count << endl;
             }
         }
@@ -184,8 +188,8 @@ void DistanceMap::loadOccMap(std::string filename) {
                 _nav_occ_map.info.width = map_info[SIZE_X] / map_info[RESOLUTION];
                 _nav_occ_map.info.height = map_info[SIZE_Y] / map_info[RESOLUTION];
                 _nav_occ_map.data.resize( _nav_occ_map.info.height * _nav_occ_map.info.width );
-                _col_dim = _nav_occ_map.info.width;
-                _row_dim = _nav_occ_map.info.height;
+                _y_max = _nav_occ_map.info.width;
+                _x_max = _nav_occ_map.info.height;
                 _resolution = _nav_occ_map.info.resolution;
 
             } else if (line_cnt == 6) {
@@ -241,18 +245,19 @@ void DistanceMap::loadMaps(
         std::string dist_map, 
         int num_degrees, 
         float ray_step) {
+
     _occ_map_pub = nh.advertise<nav_msgs::OccupancyGrid>("/map", 1, true);
     setNumDegrees(num_degrees);
     setRayStepSize(ray_step);
     loadOccMap(occ_map);
     initialize();
-    loadDistMap(dist_map);
+    //loadDistMap(dist_map);
 }
 
 /* 
  * Save the distance map to file so we don't have to calculate it everytime.
  * Each row of the file will be saved in this format:
- *   [row num] [col num] [_dist_map[0]] [_dist_map[1]] [_dist_map[2]] ...
+ *   [x num] [y num] [_dist_map[0]] [_dist_map[1]] [_dist_map[2]] ...
  */
 void DistanceMap::saveDistMap(std::string filename) {
     ofstream data_out;
@@ -265,11 +270,11 @@ void DistanceMap::saveDistMap(std::string filename) {
     }
 
     // Write to file in this format:
-    for (int row = 0; row < _row_dim; row++) {
-        for (int col = 0; col < _col_dim; col++) {
-            data_out << row << " " << col;
+    for (int x = 0; x < _x_max; x++) {
+        for (int y = 0; y < _y_max; y++) {
+            data_out << x << " " << y;
             for (int dist = 0; dist < _num_measurements; dist++) {
-                data_out << " " << _dist_map[row][col][dist];
+                data_out << " " << _dist_map[x][y][dist];
             }
             data_out << endl;
         }
@@ -301,13 +306,13 @@ void DistanceMap::initialize() {
         exit(-1);
     }
 
-    for (int row = 0; row < _row_dim; row++) {
-        std::vector<int> col_data;
-        for (int col = 0; col < _row_dim; col++) {
-            int tmp = _nav_occ_map.data[_row_dim * row + col];
-            col_data.push_back(tmp);
+    for (int x = 0; x < _x_max; x++) {
+        std::vector<int> y_data;
+        for (int y = 0; y < _x_max; y++) {
+            int tmp = _nav_occ_map.data[_x_max * x + y];
+            y_data.push_back(tmp);
         }
-        _oc_map.push_back(col_data);
+        _oc_map.push_back(y_data);
     }
 }
 
@@ -324,14 +329,14 @@ void DistanceMap::initialize() {
 void DistanceMap::create_distance_map() {
 //#define DEBUG
 
-    for (int row = 0; row < _row_dim; row++) {
-        std::vector< std::vector<float> > col_data;
-        for (int col = 0; col < _row_dim; col++) {
+    for (int x = 0; x < _x_max; x++) {
+        std::vector< std::vector<float> > y_data;
+        for (int y = 0; y < _x_max; y++) {
 
             std::vector<float> dist(_num_measurements);
 
             // If cell is wall or unknown then all distance values are 0
-            if ((getMapValue(row, col) == UNKNOWN) || (getMapValue(row, col) == WALL)) {
+            if ((getMapValue(x, y) == UNKNOWN) || (getMapValue(x, y) == WALL)) {
                 std::fill(dist.begin(), dist.begin()+_num_measurements, 0.0f);
             } else {
             // ray cast
@@ -342,7 +347,7 @@ void DistanceMap::create_distance_map() {
 #endif
                 // Cycle through all the angles
                 for (int ray = 0; ray < _num_measurements; ray++) {
-                    float ray_dist = calculate_dist(row, col, angle);
+                    float ray_dist = calculate_dist(x, y, angle);
                     ray_dist *= _resolution;    // multiply by resolution to get values in cm
                     dist[ray] = ray_dist;
                     angle += _angle_step_size;
@@ -355,9 +360,9 @@ void DistanceMap::create_distance_map() {
 #endif 
 
             }
-            col_data.push_back(dist);
+            y_data.push_back(dist);
         }
-        _dist_map.push_back(col_data);
+        _dist_map.push_back(y_data);
     }
 /* DEBUG 
     std::cout << "HERE" << std::endl;
@@ -369,38 +374,38 @@ void DistanceMap::create_distance_map() {
 
 /*
  */
-float DistanceMap::calculate_dist(int row, int col, float angle) {
-    float cur_row = (float)row;
-    float cur_col = (float)col;
+float DistanceMap::calculate_dist(int x, int y, float angle) {
+    float cur_x = (float)x;
+    float cur_y = (float)y;
 
-    float step_col = _ray_step_size * cos(angle);
-    float step_row = _ray_step_size * sin(angle);
+    float step_y = _ray_step_size * cos(angle);
+    float step_x = _ray_step_size * sin(angle);
 
 #ifdef DEBUG_1
-    cout << "r: " << row << " c: " << col << " a: " << angle << endl;
-    cout << "   " << _col_dim << " " << _row_dim << endl;
+    cout << "r: " << x << " c: " << y << " a: " << angle << endl;
+    cout << "   " << _y_max << " " << _x_max << endl;
 #endif
-    cur_col += step_col;
-    cur_row += step_row;
+    cur_y += step_y;
+    cur_x += step_x;
 
     // Make sure within map boundaries
-    while ((cur_col >= 0) && (cur_col < _col_dim) && (cur_row >= 0) && (cur_row < _row_dim)) {
-        int map_val = getMapValue(int(cur_row), int(cur_col));
+    while ((cur_y >= 0) && (cur_y < _y_max) && (cur_x >= 0) && (cur_x < _x_max)) {
+        int map_val = getMapValue(int(cur_x), int(cur_y));
 
         if ((map_val == WALL)) {
             break;
         }
-        cur_col += step_col;
-        cur_row += step_row;
+        cur_y += step_y;
+        cur_x += step_x;
     }
 
 #ifdef DEBUG
-    cout << "cur_col: " << cur_col << " cur_row: " << cur_row << endl;
-    cout << "col: " << col << " row: " << row << endl;
+    cout << "cur_y: " << cur_y << " cur_x: " << cur_x << endl;
+    cout << "y: " << y << " x: " << x << endl;
 #endif
 
-    float x_squared = (cur_col - float(col)) * (cur_col - float(col));
-    float y_squared = (cur_row - float(row)) * (cur_row - float(row));
+    float x_squared = (cur_x - float(x)) * (cur_x - float(x));
+    float y_squared = (cur_y - float(y)) * (cur_y - float(y));
 
     return sqrt(x_squared + y_squared);
 }

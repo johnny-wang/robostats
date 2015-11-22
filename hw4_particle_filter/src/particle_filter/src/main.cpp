@@ -14,11 +14,16 @@ int main(int argc, char** argv) {
     std::string laser_topic = "laser_odom";
     std::string odom_topic = "odom";
     int msg_queue_size = 1000;
-    int num_particles = 300;
+    int num_particles = 3000;
+
+//#define DEBUG
+#ifdef DEBUG
     std::string occ_map_name = "testmap.dat";
     std::string dist_map_name = "testmap.dat.txt";
-    //std::string occ_map_name = "wean.dat";
-    //std::string dist_map_name = "wean.dat.txt";
+#else
+    std::string occ_map_name = "wean.dat";
+    std::string dist_map_name = "wean.dat.txt";
+#endif
     int num_degrees = 360;
     float ray_step = 0.25f;
 

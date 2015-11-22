@@ -170,11 +170,11 @@ void calculate_distance_map(const nav_msgs::OccupancyGrid occupancy_map) {
     cout << "run time: " << duration << " sec" << endl;
     
 
-    cout << "row dim: " << map.getRowSize() << endl;
-    cout << "col dim: " << map.getColSize() << endl;
+    cout << "x dim: " << map.getXSize() << endl;
+    cout << "y dim: " << map.getYSize() << endl;
     cout << "num meas: " << map.getNumMeasurements() << endl;
-    cout << "dist row: " << map.getNumDistRow() << endl;
-    cout << "dist col: " << map.getNumDistCol() << endl;
+    cout << "dist row: " << map.getNumDistX() << endl;
+    cout << "dist col: " << map.getNumDistY() << endl;
     cout << "val: " << map.getDistValue(1,1,0*PI/180) << endl;
     cout << "val: " << map.getDistValue(1,2,0*PI/180) << endl;
     cout << "val: " << map.getDistValue(1,3,0*PI/180) << endl;

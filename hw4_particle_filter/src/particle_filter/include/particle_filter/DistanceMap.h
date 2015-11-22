@@ -22,14 +22,14 @@ public:
     DistanceMap();
     DistanceMap(nav_msgs::OccupancyGrid map, int num_degree);
 
-    unsigned int getRowSize();
-    unsigned int getColSize();
+    unsigned int getXSize();
+    unsigned int getYSize();
     unsigned int getResolution();
     unsigned int getNumMeasurements();
-    unsigned int getNumDistRow();
-    unsigned int getNumDistCol();
-    unsigned int getMapValue(int row, int col);
-    float getDistValue(int row, int col, float theta);
+    unsigned int getNumDistX();
+    unsigned int getNumDistY();
+    unsigned int getMapValue(int x, int y);
+    float getDistValue(int x, int y, float theta);
 
     void loadMaps(ros::NodeHandle nh, 
         std::string occ_map, 
@@ -47,7 +47,7 @@ protected:
 
     void initialize();
     void create_distance_map();
-    float calculate_dist(int row, int col, float angle);
+    float calculate_dist(int x, int y, float angle);
     void print_dist_map();
     void print_occ_map();
 
@@ -59,8 +59,8 @@ protected:
 
     bool _map_loaded;
 
-    int _row_dim, _row_min;
-    int _col_dim, _col_min;
+    int _x_max, _x_min;
+    int _y_max, _y_min;
     int _resolution;
     int _num_measurements;
 

@@ -5,37 +5,23 @@
 #include <ros/ros.h>
 #include <ros/package.h>
 #include <geometry_msgs/Pose2D.h>
+#include <geometry_msgs/Point.h>
+#include <tf/transform_datatypes.h>
+#include <visualization_msgs/Marker.h>
+#include <random_numbers/random_numbers.h>
 // Package stuff
 #include "particle_filter/DistanceMap.h"
 #include <particle_filter_msgs/laser_odom.h>
+#include <particle_filter_msgs/particle.h>
 // C++ stuff
+#include <random>
+#include <chrono>
 #include <vector>
 // Boost stuff
-#include <boost/uuid/uuid.hpp>
-#include <boost/random/uniform_real.hpp>
-#include <boost/random/normal_distribution.hpp>
-#include <boost/random/variate_generator.hpp>
-#include <boost/random/mersenne_twister.hpp>
-
-struct Particle
-{
-    Particle(double x, double y, double th) {
-        static int pid = 0;
-        _pose.x = x;
-        _pose.y = y;
-        _pose.theta = th;
-
-        _particle_id = pid++;
-    }
-
-    geometry_msgs::Pose2D _pose;
-    int _particle_id;
-    float _weight;
-
-    inline void print() {
-        printf("pid: %d x: %f y: %f th: %f\n", _particle_id, _pose.x, _pose.y, _pose.theta);
-    }
-};
+//#include <boost/random/uniform_real.hpp>
+//#include <boost/random/normal_distribution.hpp>
+//#include <boost/random/variate_generator.hpp>
+//#include <boost/random/mersenne_twister.hpp>
 
 class ParticleFilter
 {
@@ -56,22 +42,25 @@ public:
     void run();
 
 private:
+    void createMarker(visualization_msgs::Marker &marker, int type);
     bool initialize(std::string occ_map, std::string dist_map, int num_dgrees, float ray_step);
     void initializeParticles();
+    void printParticle(particle_filter_msgs::particle p);
+    void visualizeParticles();
 
     int _num_particles;
 
     DistanceMap _map;
-    std::vector<Particle> _particles_list;
-
-    // Random sampling
-    boost::mt19937 rng1, rng2, rng3;
+    std::vector<particle_filter_msgs::particle> _particles_list;
 
     // Subscribe to odom topics
     ros::NodeHandle _nh;
     ros::Subscriber _laser_odom;
     ros::Subscriber _odom;
     ros::Publisher _particles_pub;
+    ros::Publisher _lines_pub;
+    visualization_msgs::Marker _points_marker;
+    visualization_msgs::Marker _lines_marker;
 };
 
 #endif

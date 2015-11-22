@@ -149,10 +149,11 @@ target_link_libraries(load_data_node
   ${catkin_LIBRARIES}
 )
 target_link_libraries(main_node
-  ${catkin_LIBRARIES} ${PF_INCLUDE_DIRECTORIES}
+  ${catkin_LIBRARIES} ${PF_INCLUDE_DIRECTORIES} 
 )
 
 ## Compile with RELEASE flag
-set_target_properties(load_map_node PROPERTIES COMPILE_FLAGS "-DCMAKE_BUILD_TYPE=Release")
-set_target_properties(load_data_node PROPERTIES COMPILE_FLAGS "-DCMAKE_BUILD_TYPE=Release")
+set_target_properties(load_map_node PROPERTIES COMPILE_FLAGS "-std=c++11 -DCMAKE_BUILD_TYPE=Release")
+set_target_properties(load_data_node PROPERTIES COMPILE_FLAGS "-std=c++11 -DCMAKE_BUILD_TYPE=Release")
+set_target_properties(main_node PROPERTIES COMPILE_FLAGS "-std=c++11 -DCMAKE_BUILD_TYPE=Release")
 

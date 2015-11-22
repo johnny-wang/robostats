@@ -14,7 +14,7 @@ int main(int argc, char** argv) {
     std::string laser_topic = "laser_odom";
     std::string odom_topic = "odom";
     int msg_queue_size = 1000;
-    int num_particles = 4000;
+    int num_particles = 300;
     std::string occ_map_name = "testmap.dat";
     std::string dist_map_name = "testmap.dat.txt";
     //std::string occ_map_name = "wean.dat";

@@ -1,7 +1,7 @@
 <launch>
 
     <node name="load_data_node" type="load_data_node" pkg="particle_filter" output="screen"/>
-    <param name="log_input" value="robotdata1.log" />
+    <param name="odom_file" value="robotdata1.log" />
 <!--
     <param name="log_input" value="ascii-robotdata4.log" />
 -->

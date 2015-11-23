@@ -6,6 +6,8 @@ static const int WALL = 100;
 static const int FREE = 0;
 
 //#define DEBUG_INIT
+//#define DEBUG_DATA
+using namespace std; // for debugging for now
 
 ParticleFilter::ParticleFilter(
         ros::NodeHandle nh, 
@@ -13,6 +15,7 @@ ParticleFilter::ParticleFilter(
         std::string odom_topic,
         int msg_queue_size,
         int num_particles,
+        std::string data_file,
         std::string occ_map_file,
         std::string dist_map_file,
         int num_degrees,
@@ -20,12 +23,15 @@ ParticleFilter::ParticleFilter(
     ) : // initialization list
     _nh(nh),
     _laser_odom(nh.subscribe(laser_topic, msg_queue_size, &ParticleFilter::laser_odom_callback, this)),
-    _odom(nh.subscribe(odom_topic, msg_queue_size, &ParticleFilter::laser_odom_callback, this)),
-    _num_particles(num_particles)
+    _odom(nh.subscribe(odom_topic, msg_queue_size, &ParticleFilter::odom_callback, this)),
+    _num_particles(num_particles),
+    _particles_pub(nh.advertise<visualization_msgs::Marker>("particles", 1, true)),
+    _lines_pub(nh.advertise<visualization_msgs::Marker>("lines", 1, true)),
+    _data(data_file)
 {
-    _particles_pub = nh.advertise<visualization_msgs::Marker>("particles", 1, true);
-    _lines_pub = nh.advertise<visualization_msgs::Marker>("lines", 1, true);
     initialize(occ_map_file, dist_map_file, num_degrees, ray_step_size);
+
+    _initialized_odom = false;
 }
 
 bool ParticleFilter::initialize(
@@ -49,11 +55,65 @@ void ParticleFilter::laser_odom_callback(const particle_filter_msgs::laser_odom:
 void ParticleFilter::odom_callback(const geometry_msgs::Pose2D::ConstPtr &msg)
 {
     // Update particles with motion model
+    if (!_initialized_odom) {
+        _last_odom = *msg;
+        //_last_odom.x = msg->x;
+        //_last_odom.y = msg->y;
+        //_last_odom.theta = msg->theta;
+        _initialized_odom = true;
+
+cout << _last_odom.x << " " << _last_odom.y << " " << _last_odom.theta << endl;
+        return;
+    }
 }
 
-void ParticleFilter::run()
+/*
+ * Return 'true' if everything is good and we should keep running.
+ * Return 'false' once we've read all the lines.
+ */
+bool ParticleFilter::run()
 {
+    static int laser_cnt = 0;
+    static int all_cnt = 0;
+    static int odom_cnt = 0;
+#ifdef DEBUG_DATA
+    cout << "Running" << endl;
+#endif
 
+    OdomType data = _data.parseNextData();
+
+    switch(data) {
+    case NONE:
+#ifdef DEBUG_DATA
+        cout << "No more data" << endl;
+#endif
+        return false;
+        break;
+    case LASER:
+#ifdef DEBUG_DATA
+        cout << "Laser " << laser_cnt << " all " << all_cnt << endl;
+        laser_cnt++;
+        all_cnt++;
+#endif
+        break;
+    case ODOM:
+#ifdef DEBUG_DATA
+        cout << "Odom " << odom_cnt << " all " << all_cnt << endl;
+        odom_cnt++;
+        all_cnt++;
+#endif
+        break;
+    default:
+        cout << "Default case in parsing Odom data" << endl;
+        cout << "THIS SHOULD NEVER HAPPEN" << endl;
+        break;
+    }
+    return true;
+}
+
+void ParticleFilter::closeFile()
+{
+    _data.closeFile();
 }
 
 /***************************************************************************/
@@ -156,15 +216,17 @@ void ParticleFilter::visualizeParticles() {
     for (int i = 0; i < _particles_list.size(); i++) {
         geometry_msgs::Point p;
         // Set position and orientation of particle
+        // Multiply by map resolution to properly represent where they are on the map
         p.x = _particles_list[i].pose.x * res;
         p.y = _particles_list[i].pose.y * res;
         p.z = 0;
         p_vec.push_back(p);
 
         // Draw line (2 points) to show orientation
+        // Multiply by map resolution to properly represent where they are on the map
         geometry_msgs::Point p1;
-        p1.x = 0.3*cos(_particles_list[i].pose.theta)*res + p.x;
-        p1.y = 0.3*sin(_particles_list[i].pose.theta)*res + p.y;
+        p1.x = 0.5*res*cos(_particles_list[i].pose.theta)+ p.x;
+        p1.y = 0.5*res*sin(_particles_list[i].pose.theta)+ p.y;
         p1.z = 0;
         l_vec.push_back(p);
         l_vec.push_back(p1);

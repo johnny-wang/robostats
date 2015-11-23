@@ -11,6 +11,7 @@
 #include <random_numbers/random_numbers.h>
 // Package stuff
 #include "particle_filter/DistanceMap.h"
+#include "particle_filter/DataLoader.h"
 #include <particle_filter_msgs/laser_odom.h>
 #include <particle_filter_msgs/particle.h>
 // C++ stuff
@@ -31,6 +32,7 @@ public:
                    std::string odom_topic, 
                    int msg_queue_size,
                    int num_particles,
+                   std::string data_file,
                    std::string occ_file,
                    std::string dist_file,
                    int num_dgrees,
@@ -39,7 +41,8 @@ public:
 
     void laser_odom_callback(const particle_filter_msgs::laser_odom::ConstPtr &msg);
     void odom_callback(const geometry_msgs::Pose2D::ConstPtr &msg);
-    void run();
+    bool run();
+    void closeFile();
 
 private:
     void createMarker(visualization_msgs::Marker &marker, int type);
@@ -51,7 +54,11 @@ private:
     int _num_particles;
 
     DistanceMap _map;
+    DataLoader _data;
     std::vector<particle_filter_msgs::particle> _particles_list;
+
+    bool _initialized_odom;
+    geometry_msgs::Pose2D _last_odom;
 
     // Subscribe to odom topics
     ros::NodeHandle _nh;

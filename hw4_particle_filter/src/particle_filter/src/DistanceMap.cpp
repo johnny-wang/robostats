@@ -2,13 +2,12 @@
 
 #define PI 3.14159265
 
-using namespace std;
-
 static const int UNKNOWN = -1;
 static const int WALL = 100;
 static const int FREE = 0;
 
 //#define DEBUG
+using namespace std;  // for debugging
 
 DistanceMap::DistanceMap() :
     _map_loaded(false),

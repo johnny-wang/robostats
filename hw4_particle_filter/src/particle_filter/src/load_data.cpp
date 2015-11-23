@@ -6,7 +6,6 @@
 #include <ros/package.h>
 #include <sensor_msgs/LaserScan.h>
 #include <geometry_msgs/Pose2D.h>
-#include <sensor_msgs/LaserScan.h>
 
 #include <particle_filter_msgs/laser_odom.h>
 
@@ -59,6 +58,9 @@ void load_data() {
         cerr << "Opening data file " << in_data << endl;
 
         int line_cnt = 0;
+        int data_cnt = 0;
+        int laser_data = 0;
+        int odom_data = 0;
         while (getline(data_fs, line)) {
             // parse by empty space
             vector<string> strs;
@@ -119,7 +121,8 @@ void load_data() {
 #ifdef DEBUG
                 cout << "MAX: " << max_val << endl;
 #endif
-
+                laser_data++;
+                data_cnt++;
                 laser_pub.publish(scan);
             }
             /*** parse odom data ***/
@@ -138,11 +141,16 @@ void load_data() {
 #ifdef DEBUG
                 cerr << x << " " << y << " " << theta << endl;
 #endif
+                odom_data++;
+                data_cnt++;
                 odom_pub.publish(pose);
             } 
             line_cnt++;
         }
         cout << "line count: " << line_cnt << endl;
+        cout << "all data: " << data_cnt << endl;
+        cout << "laser: " << laser_data << endl;
+        cout << "odom: " << odom_data << endl;
 
         data_fs.close();
     } else {
@@ -155,17 +163,22 @@ int main(int argc, char** argv) {
     ros::init(argc, argv, "load_data");
     ros::NodeHandle nh;
 
-    laser_pub = nh.advertise<particle_filter_msgs::laser_odom>("laser_odom", 1);
-    odom_pub = nh.advertise<geometry_msgs::Pose2D>("odom", 1);
+    std::string laser_topic;
+    std::string odom_topic;
 
     // Get filename for input file
-    nh.getParam("log_input", g_input_file);
+    nh.getParam("odom_file", g_input_file);
+    nh.getParam("laser_topic", laser_topic);
+    nh.getParam("odom_topic", odom_topic);
+
+    laser_pub = nh.advertise<particle_filter_msgs::laser_odom>(laser_topic, 3000);
+    odom_pub = nh.advertise<geometry_msgs::Pose2D>(odom_topic, 3000);
 
     load_data();
 
-    while (nh.ok()) {
-        ros::spinOnce();
-    }
+    //while (nh.ok()) {
+    //    ros::spinOnce();
+    //}
 
     return 0;
 }

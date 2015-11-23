@@ -18,6 +18,8 @@
 #include <random>
 #include <chrono>
 #include <vector>
+//Eigen
+#include <Eigen/Geometry>
 // Boost stuff
 //#include <boost/random/uniform_real.hpp>
 //#include <boost/random/normal_distribution.hpp>
@@ -39,8 +41,6 @@ public:
                    float ray_step
                   );
 
-    void laser_odom_callback(const particle_filter_msgs::laser_odom::ConstPtr &msg);
-    void odom_callback(const geometry_msgs::Pose2D::ConstPtr &msg);
     bool run();
     void closeFile();
 
@@ -48,7 +48,10 @@ private:
     void createMarker(visualization_msgs::Marker &marker, int type);
     bool initialize(std::string occ_map, std::string dist_map, int num_dgrees, float ray_step);
     void initializeParticles();
+    Eigen::Matrix3f poseToMatrix(geometry_msgs::Pose2D pose);
     void printParticle(particle_filter_msgs::particle p);
+    void runSensorModel();
+    void runMotionModel(geometry_msgs::Pose2D odom_data);
     void visualizeParticles();
 
     int _num_particles;
@@ -62,8 +65,6 @@ private:
 
     // Subscribe to odom topics
     ros::NodeHandle _nh;
-    ros::Subscriber _laser_odom;
-    ros::Subscriber _odom;
     ros::Publisher _particles_pub;
     ros::Publisher _lines_pub;
     visualization_msgs::Marker _points_marker;

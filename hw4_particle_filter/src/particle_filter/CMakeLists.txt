@@ -11,11 +11,11 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   roslib
   particle_filter_msgs
+  pcl_ros
 )
 
 ## System dependencies are found with CMake's conventions
-find_package(Boost REQUIRED COMPONENTS system)
-
+find_package(REQUIRED COMPONENTS system)
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -106,7 +106,8 @@ catkin_package(
   INCLUDE_DIRS include
   LIBRARIES particle_filter
   CATKIN_DEPENDS nav_msgs roscpp rospy std_msgs roslib message_runtime
-  DEPENDS system_lib message_runtime
+  DEPENDS system_lib message_runtime 
+  DEPENDS Eigen
 )
 
 ###########
@@ -150,7 +151,7 @@ target_link_libraries(load_data_node
   ${catkin_LIBRARIES}
 )
 target_link_libraries(main_node
-  ${catkin_LIBRARIES} ${PF_INCLUDE_DIRECTORIES} 
+  ${catkin_LIBRARIES} ${PF_INCLUDE_DIRECTORIES} ${Eigen_LIBRARIES}
 )
 target_link_libraries(test_node
   ${catkin_LIBRARIES} ${PF_INCLUDE_DIRECTORIES} 

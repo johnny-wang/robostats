@@ -7,6 +7,7 @@ static const int FREE = 0;
 
 //#define DEBUG_INIT
 //#define DEBUG_DATA
+#define DEBUG_MOTION
 using namespace std; // for debugging for now
 
 ParticleFilter::ParticleFilter(
@@ -22,8 +23,6 @@ ParticleFilter::ParticleFilter(
         float ray_step_size
     ) : // initialization list
     _nh(nh),
-    _laser_odom(nh.subscribe(laser_topic, msg_queue_size, &ParticleFilter::laser_odom_callback, this)),
-    _odom(nh.subscribe(odom_topic, msg_queue_size, &ParticleFilter::odom_callback, this)),
     _num_particles(num_particles),
     _particles_pub(nh.advertise<visualization_msgs::Marker>("particles", 1, true)),
     _lines_pub(nh.advertise<visualization_msgs::Marker>("lines", 1, true)),
@@ -47,26 +46,6 @@ bool ParticleFilter::initialize(
     initializeParticles();
 }
 
-void ParticleFilter::laser_odom_callback(const particle_filter_msgs::laser_odom::ConstPtr &msg)
-{
-    // Update particles with sensor model
-}
-
-void ParticleFilter::odom_callback(const geometry_msgs::Pose2D::ConstPtr &msg)
-{
-    // Update particles with motion model
-    if (!_initialized_odom) {
-        _last_odom = *msg;
-        //_last_odom.x = msg->x;
-        //_last_odom.y = msg->y;
-        //_last_odom.theta = msg->theta;
-        _initialized_odom = true;
-
-cout << _last_odom.x << " " << _last_odom.y << " " << _last_odom.theta << endl;
-        return;
-    }
-}
-
 /*
  * Return 'true' if everything is good and we should keep running.
  * Return 'false' once we've read all the lines.
@@ -84,29 +63,42 @@ bool ParticleFilter::run()
 
     switch(data) {
     case NONE:
+    {
 #ifdef DEBUG_DATA
         cout << "No more data" << endl;
 #endif
         return false;
         break;
+    }
     case LASER:
+    {
 #ifdef DEBUG_DATA
         cout << "Laser " << laser_cnt << " all " << all_cnt << endl;
         laser_cnt++;
         all_cnt++;
 #endif
+        particle_filter_msgs::laser_odom laser_data = _data.getLaserData();
+        // Run sensor model
         break;
+    }
     case ODOM:
+    {
 #ifdef DEBUG_DATA
         cout << "Odom " << odom_cnt << " all " << all_cnt << endl;
         odom_cnt++;
         all_cnt++;
 #endif
+        geometry_msgs::Pose2D odom_data = _data.getOdomData();
+        // Run motion model
+        runMotionModel(odom_data);
         break;
+    }
     default:
+    {
         cout << "Default case in parsing Odom data" << endl;
         cout << "THIS SHOULD NEVER HAPPEN" << endl;
         break;
+    }
     }
     return true;
 }
@@ -200,9 +192,42 @@ void ParticleFilter::initializeParticles()
     visualizeParticles();
 }
 
+Eigen::Matrix3f ParticleFilter::poseToMatrix(geometry_msgs::Pose2D pose) {
+    return Eigen::Matrix3f();
+}
+
 void ParticleFilter::printParticle(particle_filter_msgs::particle p) {
     printf("pid: %d x: %f y: %f th: %f wt: %f\n", p.particle_id, p.pose.x, p.pose.y, 
            p.pose.theta, p.weight);
+}
+
+// Update particles with motion model
+void ParticleFilter::runMotionModel(geometry_msgs::Pose2D odom_data) {
+    if (!_initialized_odom) {
+        _last_odom = odom_data;
+        _initialized_odom = true;
+#ifdef DEBUG_MOTION
+        printf("last: %f %f %f\n", _last_odom.x, _last_odom.y, _last_odom.theta);
+#endif
+        return;
+    }
+    geometry_msgs::Pose2D delta;
+    delta.x = _last_odom.x - odom_data.x;
+    delta.y = _last_odom.y - odom_data.y;
+    delta.theta = _last_odom.theta - odom_data.theta;
+#ifdef DEBUG_MOTION
+    printf("last: %f %f %f\n", _last_odom.x, _last_odom.y, _last_odom.theta);
+    printf("cur: %f %f %f\n", odom_data.x, odom_data.y, odom_data.theta);
+    printf("delta: %f %f %f\n", delta.x, delta.y, delta.theta);
+    cin.get();
+
+    
+
+#endif
+}
+
+void ParticleFilter::runSensorModel() {
+
 }
 
 void ParticleFilter::visualizeParticles() {

@@ -197,7 +197,6 @@ int main(int argc, char** argv) {
 
     // latch occupancy map data
     occ_map_pub = nh.advertise<nav_msgs::OccupancyGrid>("map", 1, true);
-    dist_map_pub = nh.advertise<particle_filter_msgs::distance_map>("dist_map", 1, true);
 
     // Get filename for map file
     nh.getParam("map_input", g_map_file);

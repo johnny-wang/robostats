@@ -137,7 +137,7 @@ include_directories(
 add_executable(load_map_node src/load_map.cpp src/DistanceMap.cpp)
 add_executable(load_data_node src/load_data.cpp)
 add_executable(main_node src/main.cpp src/DistanceMap.cpp src/ParticleFilter.cpp src/DataLoader.cpp)
-add_executable(test_node src/test_cb.cpp)
+#add_executable(test_node src/test_cb.cpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
@@ -153,13 +153,13 @@ target_link_libraries(load_data_node
 target_link_libraries(main_node
   ${catkin_LIBRARIES} ${PF_INCLUDE_DIRECTORIES} ${Eigen_LIBRARIES}
 )
-target_link_libraries(test_node
-  ${catkin_LIBRARIES} ${PF_INCLUDE_DIRECTORIES} 
-)
+#target_link_libraries(test_node
+#  ${catkin_LIBRARIES} ${PF_INCLUDE_DIRECTORIES} 
+#)
 
 ## Compile with RELEASE flag
 set_target_properties(load_map_node PROPERTIES COMPILE_FLAGS "-std=c++11 -DCMAKE_BUILD_TYPE=Release")
 set_target_properties(load_data_node PROPERTIES COMPILE_FLAGS "-std=c++11 -DCMAKE_BUILD_TYPE=Release")
 set_target_properties(main_node PROPERTIES COMPILE_FLAGS "-std=c++11 -DCMAKE_BUILD_TYPE=Release")
-set_target_properties(test_node PROPERTIES COMPILE_FLAGS "-std=c++11 -DCMAKE_BUILD_TYPE=Release")
+#set_target_properties(test_node PROPERTIES COMPILE_FLAGS "-std=c++11 -DCMAKE_BUILD_TYPE=Release")
 

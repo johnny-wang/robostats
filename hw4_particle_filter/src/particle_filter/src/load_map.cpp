@@ -6,7 +6,6 @@
 #include <ros/package.h>
 #include <nav_msgs/OccupancyGrid.h>
 
-#include <particle_filter_msgs/distance_map.h>
 // basic file operations
 #include <iostream>
 #include <fstream>

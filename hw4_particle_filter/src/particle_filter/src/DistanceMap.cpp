@@ -59,14 +59,20 @@ unsigned int DistanceMap::getMapValue(int x, int y) {
 }
 
 /*
- * Theta is in RADIANS!!!
+ * INPUT:
+ *  x, y = the positions of the particle.
+ *  theta = the orientation of the particle (in RADIANS!!!)
  */
-float DistanceMap::getDistValue(int x, int y, float theta) {
+float DistanceMap::getDistValue(float x, float y, float theta) {
+#define DEBUG_DIST
     // Addition part is to help round to nearest angle
     int multiplier = (theta + (_angle_step_size/2)) / _angle_step_size;
-#ifdef DEBUG
+#ifdef DEBUG_DIST
     printf("mod of %f %f: %d\n", theta, _angle_step_size, multiplier);
 #endif
+    // Need to convert to map's coordinate which is 10cm x 10cm per cell
+    x /= _resolution;
+    y /= _resolution;
     return _dist_map[x][y][multiplier];
 }
 
@@ -93,12 +99,50 @@ void DistanceMap::loadDistMap(std::string filename) {
 
     std::string fname = _package_path + "/data/map/" + filename;
 
+/*
+cout << fname << endl;
+    FILE* file = fopen(fname.c_str(), "r");
+
+    if (NULL == file) {
+        printf("Failed to open '%s'\n", fname.c_str());
+        exit(-1);
+    }
+    int row, col;
+    while(!feof(file)) {
+        while(fscanf(file, "%d %d ", &row, &col)) {
+            float tmp;
+//            cout << "r: " << row << " c: " << col << endl;
+            for (int i = 0; i < _num_measurements; i++) {
+                fscanf(file, "%f ", &tmp);
+//                cout << " " << tmp;
+            }
+//            cout << endl;
+            fscanf(file, "%[^\n]\n", NULL); // skip the newline
+//cin.get();
+//break;
+        }
+    }
+fclose(file);
+*/
+    boost::timer t;
+
     data_in.open(fname.c_str());
 
     if (data_in.is_open()) {
         cout << "Loading distance map data from " << fname << endl;
 
-        std::vector< std::vector<float> > y_data;
+        _dist_map.resize(_x_max);
+        // allocate memory
+        for (int i = 0; i < _x_max; i++) {
+            _dist_map[i].resize(_y_max);
+            for (int j = 0; j < _y_max; j++) {
+                _dist_map[i][j].resize(_num_measurements,0);
+            }
+        }
+
+//print_dist_map();
+
+        //std::vector< std::vector<float> > y_data(_y_max, std::vector<float>(_x_max));
         // Loop through each line of the file
         int count = 0;
         while(getline(data_in, line)) {
@@ -109,17 +153,19 @@ void DistanceMap::loadDistMap(std::string filename) {
             int x = atoi(strs[0].c_str());
             int y = atoi(strs[1].c_str());
 
-            std::vector<float> dist_val;
+            //std::vector<float> dist_val;
+            //dist_val.reserve(_num_measurements + 2); // 2 for row, col
             for (int j = 2; j < strs.size(); j++) {
-                dist_val.push_back(atof(strs[j].c_str()));
+                //dist_val.push_back(atof(strs[j].c_str()));
+                _dist_map[x][y][j-2] = atof(strs[j].c_str());
             }
 
-            y_data.push_back(dist_val);
+            //y_data.push_back(dist_val);
 
-            if (y == _y_max-1) {
-                _dist_map.push_back(y_data);
-                y_data.clear();
-            }
+            //if (y == _y_max-1) {
+            //    _dist_map.push_back(y_data);
+            //    y_data.clear();
+            //}
             count++;
             // Just so we know the program didn't hang.
             if ((count % 5000) == 0) {
@@ -130,11 +176,15 @@ void DistanceMap::loadDistMap(std::string filename) {
     } else {
     // file doesn't exist, create the distance map then save it.
         cout << "File doesn't exist: " << fname << endl;
-        cout << "Creating new distance map" << endl;
         create_distance_map();
         saveDistMap(filename);
     }
+
+//print_dist_map();
+
     cout << "Finished loading" << endl;
+    cout << "time: " << t.elapsed() << endl;
+
     data_in.close();
 }
 
@@ -257,25 +307,33 @@ void DistanceMap::loadMaps(
  * Save the distance map to file so we don't have to calculate it everytime.
  * Each row of the file will be saved in this format:
  *   [x num] [y num] [_dist_map[0]] [_dist_map[1]] [_dist_map[2]] ...
+ *
+ * Only save the calculated values at free cells
  */
 void DistanceMap::saveDistMap(std::string filename) {
     ofstream data_out;
     filename = _package_path + "/data/map/" + filename;
     data_out.open(filename.c_str());
 
+    cout << "Saving distance map" << endl;
+
     if (!data_out.is_open()) {
         cerr << "ERROR: Unable to open file: " << filename << endl;
         return;
     }
-
     // Write to file in this format:
     for (int x = 0; x < _x_max; x++) {
         for (int y = 0; y < _y_max; y++) {
-            data_out << x << " " << y;
-            for (int dist = 0; dist < _num_measurements; dist++) {
-                data_out << " " << _dist_map[x][y][dist];
+            // Don't write to file if it's unknown or occupied cell
+            if ((getMapValue(x, y) == UNKNOWN) || (getMapValue(x, y) == WALL)) {
+                // do nothing
+            } else {
+                data_out << x << " " << y << " ";
+                for (int dist = 0; dist < _num_measurements; dist++) {
+                    data_out << _dist_map[x][y][dist] << " ";
+                }
+                data_out << endl;
             }
-            data_out << endl;
         }
     }
 
@@ -328,13 +386,22 @@ void DistanceMap::initialize() {
 void DistanceMap::create_distance_map() {
 //#define DEBUG
 
+    cout << "Creating new distance map" << endl;
+
+#ifdef DEBUG
+    boost::timer t;
+#endif
+
+    int lines_written = 0;
     for (int x = 0; x < _x_max; x++) {
         std::vector< std::vector<float> > y_data;
+        y_data.reserve(_x_max * _y_max);   // pre-allocate
+
         for (int y = 0; y < _x_max; y++) {
 
             std::vector<float> dist(_num_measurements);
 
-            // If cell is wall or unknown then all distance values are 0
+            // If cell is wall or unknown then skip storing distance
             if ((getMapValue(x, y) == UNKNOWN) || (getMapValue(x, y) == WALL)) {
                 std::fill(dist.begin(), dist.begin()+_num_measurements, 0.0f);
             } else {
@@ -357,13 +424,17 @@ void DistanceMap::create_distance_map() {
 #ifdef DEBUG
                 cout << "final angle: " << angle << endl;
 #endif 
-
+                lines_written++;
             }
             y_data.push_back(dist);
         }
         _dist_map.push_back(y_data);
     }
-/* DEBUG 
+#ifdef DEBUG
+    std::cout << "time: " << t.elapsed() << std::endl;
+    std::cout << "lines: " << lines_written << std::endl;
+#endif
+/*
     std::cout << "HERE" << std::endl;
     std::cout << _dist_map.size() << std::endl;
     std::cout << _dist_map[0].size() << std::endl;
@@ -413,12 +484,19 @@ void DistanceMap::print_dist_map() {
     cout << "Distance Map size" << endl;
     cout << _dist_map.size() << endl;
     cout << _dist_map[0].size() << endl;
+    cout << _dist_map[0][0].size() << endl;
 
-    for (int i = 0; i < _dist_map.size(); i++) {
-        for (int j = 0; j < _dist_map[0].size(); j++) {
-
+    for (int i = 0; i < _x_max; i++) {
+        cout << "*************************" << endl;
+        for (int j = 0; j < _y_max; j++) {
+            printf("\n%d %d\n", i, j);
+            for (int k = 0; k < _num_measurements; k++) {
+                cout << _dist_map[i][j][k] << " ";
+            }
+            cout << endl;
         }
     }
+
 }
 
 void DistanceMap::print_occ_map() {

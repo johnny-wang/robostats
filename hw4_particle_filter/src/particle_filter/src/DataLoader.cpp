@@ -63,11 +63,12 @@ OdomType DataLoader::parseNextData()
 #endif
             // store laser scans
             _parsed_laser.laser.header.frame_id = "laser_frame";
-            _parsed_laser.laser.angle_min = -PI / 2;
-            _parsed_laser.laser.angle_max = PI / 2;
+            // 0 to 179 because there are 180 readings
+            _parsed_laser.laser.angle_min = 0;
+            _parsed_laser.laser.angle_max = 179 * PI / 180; // radians
             _parsed_laser.laser.angle_increment = PI / NUM_LASER_READINGS;
             _parsed_laser.laser.range_min = 0.0;
-            _parsed_laser.laser.range_max = 8500;  // in cm, heuristically 8183 cm
+            _parsed_laser.laser.range_max = 8250;  // in cm, heuristically 8183 cm
             _parsed_laser.laser.ranges.resize(NUM_LASER_READINGS);
 
             float max_val = 0;

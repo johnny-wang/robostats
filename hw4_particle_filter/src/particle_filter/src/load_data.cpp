@@ -102,8 +102,9 @@ void load_data() {
 #endif 
                 // store laser scans
                 scan.laser.header.frame_id = g_laser_frame;
-                scan.laser.angle_min = -PI / 2;
-                scan.laser.angle_max = PI / 2;
+                // 0 to 179 degrees because there are 180 readings
+                scan.laser.angle_min = 0;
+                scan.laser.angle_max = 179 * PI/180;  // to radians
                 scan.laser.angle_increment = PI / NUM_LASER_READINGS;
                 scan.laser.range_min = 0.0;
                 scan.laser.range_max = 8500;  // in cm, heuristically 8183 cm

@@ -13,5 +13,10 @@
 <!--
     <node name="load_data_node" type="load_data_node" pkg="particle_filter" output="screen"/>
 -->
+ <!--
+	<node name="rviz" type="rviz" pkg="rviz" >
+       <param name="display-config" value="./src/particle_filter/rviz" />
+    </node>
+	-->
     
 </launch>

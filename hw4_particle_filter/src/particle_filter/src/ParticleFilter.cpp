@@ -6,8 +6,9 @@ static const int WALL = 100;
 static const int FREE = 0;
 
 //#define DEBUG_INIT
-//#define DEBUG_DATA
-#define DEBUG_MOTION
+#define DEBUG_DATA
+//#define DEBUG_MOTION
+#define DEBUG_SENSOR
 using namespace std; // for debugging for now
 
 ParticleFilter::ParticleFilter(
@@ -44,6 +45,10 @@ bool ParticleFilter::initialize(
 
     // initialize particles (uniformly)
     initializeParticles();
+
+    //initialize model parameters
+    z_max =  8250; //sensor model max (not validated) cm
+    lambda_short = 0.3; //sensor model lambda short (not validated)
 }
 
 /*
@@ -79,6 +84,7 @@ bool ParticleFilter::run()
 #endif
         particle_filter_msgs::laser_odom laser_data = _data.getLaserData();
         // Run sensor model
+        runSensorModel(laser_data);
         break;
     }
     case ODOM:
@@ -192,8 +198,19 @@ void ParticleFilter::initializeParticles()
     visualizeParticles();
 }
 
+Eigen::Matrix3f ParticleFilter::poseToMatrix(particle_filter_msgs::particle p) {
+    return poseToMatrix(p.pose);
+}
+
 Eigen::Matrix3f ParticleFilter::poseToMatrix(geometry_msgs::Pose2D pose) {
-    return Eigen::Matrix3f();
+    Eigen::Matrix3f m;
+    m << cos(pose.theta), -sin(pose.theta), pose.x,
+         sin(pose.theta),  cos(pose.theta), pose.y,
+                      0 ,                0,      1;
+
+#ifdef DEBUG_MOTION
+    cout << m << endl;
+#endif
 }
 
 void ParticleFilter::printParticle(particle_filter_msgs::particle p) {
@@ -211,6 +228,18 @@ void ParticleFilter::runMotionModel(geometry_msgs::Pose2D odom_data) {
 #endif
         return;
     }
+
+    /* New world coordinate of particle is old world coord * inverse of odom prev * odom new
+     * Latex syntax: T_{p2}^{W} = T_{p1}^{W} * (T_{p1}^{O})^{-1} * T_{p2}^{O}
+     */
+    for (int i = 0; i < _particles_list.size(); i++) {
+        Eigen::Matrix3f p_world = poseToMatrix(_particles_list[i]);
+        Eigen::Matrix3f odom_last = poseToMatrix(_last_odom);
+        Eigen::Matrix3f odom_cur = poseToMatrix(odom_data);
+
+        Eigen::Matrix3f p_world_new = p_world * odom_last.inverse() * odom_cur;
+
+    }
     geometry_msgs::Pose2D delta;
     delta.x = _last_odom.x - odom_data.x;
     delta.y = _last_odom.y - odom_data.y;
@@ -221,15 +250,95 @@ void ParticleFilter::runMotionModel(geometry_msgs::Pose2D odom_data) {
     printf("delta: %f %f %f\n", delta.x, delta.y, delta.theta);
     cin.get();
 
-    
+    Eigen::Matrix3f last_pose = poseToMatrix(_last_odom);
 
 #endif
+    _last_odom = odom_data;
 }
 
-void ParticleFilter::runSensorModel() {
+
+/************************************************************************
+Sensor Model
+*************************************************************************/
+void ParticleFilter::runSensorModel(particle_filter_msgs::laser_odom laser_data) {
+    //iterate over each particle
+    //for each particle, sample extract the predicted lidar scan data
+    //for each ray, compare the ray to the corresponding measurement ray (right to left)
+        //combine phit, pshort, pmax and prand according to book
+        //multiply each together for particle (all 180)
+    for (int particleIndex = 0; particleIndex < _num_particles; particleIndex++)
+    {
+        //for each ray (currently 0-179)
+        for (int rayIndex = 0; rayIndex < 180; rayIndex ++)
+        {
+            //double phit = prob_hit()
+        }
+
+    }
+#ifdef DEBUG_SENSOR
+    cin.get();
+#endif
+
+    //resample according to new weights
 
 }
 
+double ParticleFilter::prob_hit(double z_true, double z)
+{
+    double p = 0.0;
+
+    if (z >= 0 && z <= z_max)
+    {
+        double eta;
+
+
+    }
+
+    return p;
+}
+
+double ParticleFilter::prob_short(double z_true, double z)
+{
+    double p = 0.0;
+
+    if (z >= 0 && z <= z_true)
+    {
+        double eta = 1 / (1 - exp(-lambda_short * z_true));
+        p = (eta * lambda_short * exp(-lambda_short * z));
+    }
+
+    return p;
+}
+
+double ParticleFilter::prob_max(double z)
+{
+    if ( abs(z-z_max) < 0.001 ) 
+        return 1.0;
+    else
+        return 0.0;
+}
+
+double ParticleFilter::prob_rand(double z)
+{
+    if (z >= 0 && z <= z_max)
+        return (1.0/z_max);
+    else
+        return 0.0;
+}
+
+/************************************************************************
+resample
+*************************************************************************/
+void ParticleFilter::resampleParticles()
+{
+        //normalize weights
+        //throw darts
+
+}
+
+/************************************************************************
+Visualize Tools
+*************************************************************************/
 void ParticleFilter::visualizeParticles() {
     int res = _map.getResolution();
 

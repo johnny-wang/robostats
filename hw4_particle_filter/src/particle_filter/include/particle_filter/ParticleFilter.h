@@ -49,10 +49,22 @@ private:
     bool initialize(std::string occ_map, std::string dist_map, int num_dgrees, float ray_step);
     void initializeParticles();
     Eigen::Matrix3f poseToMatrix(geometry_msgs::Pose2D pose);
+    Eigen::Matrix3f poseToMatrix(particle_filter_msgs::particle p);
     void printParticle(particle_filter_msgs::particle p);
-    void runSensorModel();
+    void runSensorModel(particle_filter_msgs::laser_odom laser_data);
     void runMotionModel(geometry_msgs::Pose2D odom_data);
     void visualizeParticles();
+    
+    //sensor model prob functions
+    double prob_hit(double z_true, double z);
+    double prob_short(double z_true, double z);
+    double prob_max(double z);
+	double prob_rand(double z);
+	double z_max; //max lidar range
+	double lambda_short; //measurement model intrinsic
+	
+	void resampleParticles();
+    
 
     int _num_particles;
 

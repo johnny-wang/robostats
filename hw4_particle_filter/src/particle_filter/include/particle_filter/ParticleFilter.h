@@ -9,6 +9,7 @@
 #include <tf/transform_datatypes.h>
 #include <visualization_msgs/Marker.h>
 #include <random_numbers/random_numbers.h>
+#include <random>
 // Package stuff
 #include "particle_filter/DistanceMap.h"
 #include "particle_filter/DataLoader.h"
@@ -60,6 +61,7 @@ private:
     double prob_short(double z_true, double z);
     double prob_max(double z);
 	double prob_rand(double z);
+  double sensorSigma;//std dev for sensor model
 	double z_max; //max lidar range
 	double lambda_short; //measurement model intrinsic
     float weight_max;
@@ -67,7 +69,10 @@ private:
 	float weight_hit;
 	float weight_short;
 	
-	void resampleParticles(float probability_list[]);
+	void resampleParticles(std::vector<float> probability_list);
+	std::default_random_engine generator;
+
+
     
 
     int _num_particles;

@@ -116,6 +116,7 @@ bool ParticleFilter::run()
         break;
     }
     }
+    visualizeParticles();
     return true;
 }
 

@@ -64,7 +64,7 @@ unsigned int DistanceMap::getMapValue(int x, int y) {
  *  theta = the orientation of the particle (in RADIANS!!!)
  */
 float DistanceMap::getDistValue(float x, float y, float theta) {
-#define DEBUG_DIST
+//#define DEBUG_DIST
     // Addition part is to help round to nearest angle
     int multiplier = (theta + (_angle_step_size/2)) / _angle_step_size;
 #ifdef DEBUG_DIST
@@ -300,7 +300,7 @@ void DistanceMap::loadMaps(
     setRayStepSize(ray_step);
     loadOccMap(occ_map);
     initialize();
-    //loadDistMap(dist_map);
+    loadDistMap(dist_map);
 }
 
 /* 

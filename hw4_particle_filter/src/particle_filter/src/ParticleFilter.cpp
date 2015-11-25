@@ -294,11 +294,11 @@ void ParticleFilter::runSensorModel(particle_filter_msgs::laser_odom laser_data)
         for (int rayIndex = 0; rayIndex < 180; rayIndex ++)
         {
             //get predicted measurement from position and orientation (plus rel. ray angle)
-            //float predictedMeasure = _map.getDistValue(
-            //    particle.pose.x, particle.pose.y, rayAngle);
+            float predictedMeasure = _map.getDistValue(
+                particle.pose.x, particle.pose.y, rayAngle);
 
-            int min = 1; int max = 8250;
-            float predictedMeasure = (rand()%(max-min))+min;; //temporary for testing
+            //int min = 1; int max = 8250;
+            //float predictedMeasure = (rand()%(max-min))+min;; //temporary for testing
             
             float actualMeasure = laser_data.laser.ranges[rayIndex];
             double phit = prob_hit(predictedMeasure, actualMeasure);

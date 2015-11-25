@@ -47,8 +47,14 @@ bool ParticleFilter::initialize(
     initializeParticles();
 
     //initialize model parameters
-    z_max =  8250; //sensor model max (not validated) cm
-    lambda_short = 0.3; //sensor model lambda short (not validated)
+    //sensor models
+        z_max =  8250; //sensor model max range(not validated) cm
+        lambda_short = 0.3; //sensor model lambda short (not validated)
+        //tuning params for weighting params
+        weight_max = 1;
+        weight_rand = 1;
+        weight_hit = 1;
+        weight_short = 1;
 }
 
 /*
@@ -261,18 +267,47 @@ void ParticleFilter::runMotionModel(geometry_msgs::Pose2D odom_data) {
 Sensor Model
 *************************************************************************/
 void ParticleFilter::runSensorModel(particle_filter_msgs::laser_odom laser_data) {
-    //iterate over each particle
-    //for each particle, sample extract the predicted lidar scan data
-    //for each ray, compare the ray to the corresponding measurement ray (right to left)
-        //combine phit, pshort, pmax and prand according to book
-        //multiply each together for particle (all 180)
+
+    //will store the probabiblity of each particle
+    float probability_list[_num_particles];
+
+    //for each particle in list
     for (int particleIndex = 0; particleIndex < _num_particles; particleIndex++)
     {
-        //for each ray (currently 0-179)
-        for (int rayIndex = 0; rayIndex < 180; rayIndex ++)
+        //get current particle from list
+        particle_filter_msgs::particle particle = _particles_list[particleIndex];
+
+        //get right ray angle in radians, [0,2pi)
+        float rayAngle =particle.pose.theta + M_PI/2.0;
+        if (rayAngle >= 2*M_PI) {rayAngle -= (2*M_PI);}
+
+        //store the running probability
+        float particleProb = 1.0;
+
+        //for all 180 rays 
+        for (int rayIndex = 0; rayIndex > 180; rayIndex ++)
         {
-            //double phit = prob_hit()
+            //get predicted measurement from position and orientation (plus rel. ray angle)
+            float predictedMeasure = _map.getDistValue(
+                particle.pose.x, particle.pose.y, rayAngle);
+            float actualMeasure = laser_data.laser.ranges[rayIndex];
+            
+            double phit = prob_hit(predictedMeasure, actualMeasure);
+            double pshort = prob_short(predictedMeasure, actualMeasure);
+            double pmax = prob_max(actualMeasure);
+            double prand = prob_rand(actualMeasure);
+
+            double rayProb = weight_hit*phit + weight_short*pshort + 
+                weight_max * pmax + weight_rand * prand;
+
+            //update running probability
+            particleProb *= rayProb;
+
+            //get next ray angle , [0,2pi)
+            rayAngle -= (2*M_PI)/360;
+            if (rayAngle < 0) {rayAngle += (2*M_PI);}
         }
+        probability_list[particleIndex] = particleProb;
 
     }
 #ifdef DEBUG_SENSOR
@@ -280,17 +315,19 @@ void ParticleFilter::runSensorModel(particle_filter_msgs::laser_odom laser_data)
 #endif
 
     //resample according to new weights
-
+    resampleParticles(probability_list);
 }
 
 double ParticleFilter::prob_hit(double z_true, double z)
 {
+    //<TODO> finish this function
     double p = 0.0;
 
     if (z >= 0 && z <= z_max)
     {
-        double eta;
-
+        double eta = 1/1;
+        
+        p = eta;
 
     }
 
@@ -329,8 +366,9 @@ double ParticleFilter::prob_rand(double z)
 /************************************************************************
 resample
 *************************************************************************/
-void ParticleFilter::resampleParticles()
+void ParticleFilter::resampleParticles(float probability_list[])
 {
+    //<TODO> rnasci 
         //normalize weights
         //throw darts
 

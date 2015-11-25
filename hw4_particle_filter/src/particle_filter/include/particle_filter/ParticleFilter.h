@@ -62,8 +62,12 @@ private:
 	double prob_rand(double z);
 	double z_max; //max lidar range
 	double lambda_short; //measurement model intrinsic
+    float weight_max;
+	float weight_rand;
+	float weight_hit;
+	float weight_short;
 	
-	void resampleParticles();
+	void resampleParticles(float probability_list[]);
     
 
     int _num_particles;

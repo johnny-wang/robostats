@@ -192,8 +192,19 @@ void ParticleFilter::initializeParticles()
     visualizeParticles();
 }
 
+Eigen::Matrix3f ParticleFilter::poseToMatrix(particle_filter_msgs::particle p) {
+    return poseToMatrix(p.pose);
+}
+
 Eigen::Matrix3f ParticleFilter::poseToMatrix(geometry_msgs::Pose2D pose) {
-    return Eigen::Matrix3f();
+    Eigen::Matrix3f m;
+    m << cos(pose.theta), -sin(pose.theta), pose.x,
+         sin(pose.theta),  cos(pose.theta), pose.y,
+                      0 ,                0,      1;
+
+#ifdef DEBUG_MOTION
+    cout << m << endl;
+#endif
 }
 
 void ParticleFilter::printParticle(particle_filter_msgs::particle p) {
@@ -211,6 +222,18 @@ void ParticleFilter::runMotionModel(geometry_msgs::Pose2D odom_data) {
 #endif
         return;
     }
+
+    /* New world coordinate of particle is old world coord * inverse of odom prev * odom new
+     * Latex syntax: T_{p2}^{W} = T_{p1}^{W} * (T_{p1}^{O})^{-1} * T_{p2}^{O}
+     */
+    for (int i = 0; i < _particles_list.size(); i++) {
+        Eigen::Matrix3f p_world = poseToMatrix(_particles_list[i]);
+        Eigen::Matrix3f odom_last = poseToMatrix(_last_odom);
+        Eigen::Matrix3f odom_cur = poseToMatrix(odom_data);
+
+        Eigen::Matrix3f p_world_new = p_world * odom_last.inverse() * odom_cur;
+
+    }
     geometry_msgs::Pose2D delta;
     delta.x = _last_odom.x - odom_data.x;
     delta.y = _last_odom.y - odom_data.y;
@@ -221,9 +244,10 @@ void ParticleFilter::runMotionModel(geometry_msgs::Pose2D odom_data) {
     printf("delta: %f %f %f\n", delta.x, delta.y, delta.theta);
     cin.get();
 
-    
+    Eigen::Matrix3f last_pose = poseToMatrix(_last_odom);
 
 #endif
+    _last_odom = odom_data;
 }
 
 void ParticleFilter::runSensorModel() {

@@ -49,6 +49,7 @@ private:
     bool initialize(std::string occ_map, std::string dist_map, int num_dgrees, float ray_step);
     void initializeParticles();
     Eigen::Matrix3f poseToMatrix(geometry_msgs::Pose2D pose);
+    Eigen::Matrix3f poseToMatrix(particle_filter_msgs::particle p);
     void printParticle(particle_filter_msgs::particle p);
     void runSensorModel();
     void runMotionModel(geometry_msgs::Pose2D odom_data);

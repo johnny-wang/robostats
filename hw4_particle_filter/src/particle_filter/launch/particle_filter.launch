@@ -3,7 +3,7 @@
     <param name="odom_file" type="str" value="robotdata1.log" />
     <param name="laser_topic" type="str" value="laser_odom" />
     <param name="odom_topic" type="str" value="odom" />
-    <param name="particles" type="int" value="3000" />
+    <param name="particles" type="int" value="10000" />
     <param name="msg_queue_size" type="int" value="100" />
     <param name="num_degrees" type="int" value="360" />
     <param name="ray_step_size" type="double" value="0.25" />
@@ -13,10 +13,5 @@
 <!--
     <node name="load_data_node" type="load_data_node" pkg="particle_filter" output="screen"/>
 -->
- <!--
-	<node name="rviz" type="rviz" pkg="rviz" >
-       <param name="display-config" value="./src/particle_filter/rviz" />
-    </node>
-	-->
     
 </launch>

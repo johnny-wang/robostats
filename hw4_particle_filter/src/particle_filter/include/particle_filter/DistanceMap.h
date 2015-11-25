@@ -13,6 +13,8 @@
 // Boost for string tokenizing
 #include <boost/algorithm/string.hpp>
 
+#include <boost/timer.hpp>
+
 enum MapInfo { SIZE_X, SIZE_Y, RESOLUTION, SHIFT_X, SHIFT_Y };
 
 class DistanceMap {
@@ -29,7 +31,7 @@ public:
     unsigned int getNumDistX();
     unsigned int getNumDistY();
     unsigned int getMapValue(int x, int y);
-    float getDistValue(int x, int y, float theta);
+    float getDistValue(float x, float y, float theta);
 
     void loadMaps(ros::NodeHandle nh, 
         std::string occ_map, 

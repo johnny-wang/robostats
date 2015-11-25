@@ -39,7 +39,7 @@ State motion_updater::sample_motion_model_odometry(State prev_state, Odometry od
 
 	double d_rot1 = atan2(odometer.o_curr.y-odometer.o_prev.y, odometer.o_curr.x-odometer.o_prev.x) - odometer.o_prev.theta;
 	double d_trans = sqrt((odometer.o_curr.y-odometer.o_prev.y)*(odometer.o_curr.y-odometer.o_prev.y)
-					- (odometer.o_curr.x-odometer.o_prev.x)*(odometer.o_curr.x-odometer.o_prev.x));
+					+ (odometer.o_curr.x-odometer.o_prev.x)*(odometer.o_curr.x-odometer.o_prev.x));
 	double d_rot2 = odometer.o_curr.theta - odometer.o_prev.theta - d_rot1; 
 
 //	// use below if {o} == {w}
@@ -79,12 +79,13 @@ State motion_updater::sample_motion_model_odometry_v2(State prev_state, Odometry
 
 	double d_rot1 = atan2(t_w2_w.at<double>(1,0)-prev_state.y, t_w2_w.at<double>(0,0)-prev_state.x) - prev_state.theta;
 	double d_trans = sqrt((t_w2_w.at<double>(1,0)-prev_state.y)*(t_w2_w.at<double>(1,0)-prev_state.y)
-		- (t_w2_w.at<double>(0,0)-prev_state.x)*(t_w2_w.at<double>(0,0)-prev_state.x));
-	double d_rot2 = prev_state.theta - odometer.o_prev.theta + odometer.o_curr.theta - odometer.o_prev.theta - d_rot1; 
+				+ (t_w2_w.at<double>(0,0)-prev_state.x)*(t_w2_w.at<double>(0,0)-prev_state.x));
+//	double d_rot2 = prev_state.theta - odometer.o_prev.theta + odometer.o_curr.theta - odometer.o_prev.theta - d_rot1; 
+	double d_rot2 = odometer.o_curr.theta - odometer.o_prev.theta - d_rot1; 
 
-	double d_rot1_noise = d_rot1 - sample(a1, d_rot1, a2, d_trans);
-	double d_trans_noise = d_trans - sample(a3, d_trans, a4, d_rot1+d_rot2);
-	double d_rot2_noise = d_rot2 - sample(a1, d_rot2, a2, d_trans);
+	double d_rot1_noise = d_rot1 - sample(a1, abs(d_rot1), a2, d_trans);
+	double d_trans_noise = d_trans - sample(a3, d_trans, a4, abs(d_rot1)+abs(d_rot2));
+	double d_rot2_noise = d_rot2 - sample(a1, abs(d_rot2), a2, d_trans);
 
 	return State(prev_state.x + d_trans_noise*cos(prev_state.theta + d_rot1_noise),
 		prev_state.y + d_trans_noise*sin(prev_state.theta + d_rot1_noise),
@@ -94,7 +95,9 @@ State motion_updater::sample_motion_model_odometry_v2(State prev_state, Odometry
 double motion_updater::sample(double a1, double odo1, double a2, double odo2)
 {
 	std::default_random_engine generator;
-	std::normal_distribution<double> distribution(0, a1*abs(odo1)+a2*abs(odo2));
+//	std::normal_distribution<double> distribution(0, a1*abs(odo1)+a2*abs(odo2));
+//	printf("=== %lf %lf %lf %lf \n", a1, odo1, a2, odo2);
+	std::normal_distribution<double> distribution(0, a1*(odo1)+a2*(odo2));
 
 	return distribution(generator);
 }

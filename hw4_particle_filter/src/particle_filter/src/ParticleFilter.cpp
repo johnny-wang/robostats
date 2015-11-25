@@ -8,7 +8,7 @@ static const int FREE = 0;
 //#define DEBUG_INIT
 #define DEBUG_DATA
 //#define DEBUG_MOTION
-#define DEBUG_SENSOR
+//#define DEBUG_SENSOR
 using namespace std; // for debugging for now
 
 ParticleFilter::ParticleFilter(
@@ -48,13 +48,17 @@ bool ParticleFilter::initialize(
 
     //initialize model parameters
     //sensor models
+        sensorSigma = 0.025; //cm
         z_max =  8250; //sensor model max range(not validated) cm
-        lambda_short = 0.3; //sensor model lambda short (not validated)
+        lambda_short = 0.0003; //sensor model lambda short (not validated)
         //tuning params for weighting params
         weight_max = 1;
-        weight_rand = 1;
+        weight_rand = 0.75;
         weight_hit = 1;
-        weight_short = 1;
+        weight_short = 0.5;
+
+    //Reseeding params
+        int placement_stdDev = 15; //cm from placement for 1 std dev
 }
 
 /*
@@ -269,7 +273,8 @@ Sensor Model
 void ParticleFilter::runSensorModel(particle_filter_msgs::laser_odom laser_data) {
 
     //will store the probabiblity of each particle
-    float probability_list[_num_particles];
+    //float probability_list[_num_particles];
+    std::vector<float> probability_list(_num_particles);
 
     //for each particle in list
     for (int particleIndex = 0; particleIndex < _num_particles; particleIndex++)
@@ -282,16 +287,19 @@ void ParticleFilter::runSensorModel(particle_filter_msgs::laser_odom laser_data)
         if (rayAngle >= 2*M_PI) {rayAngle -= (2*M_PI);}
 
         //store the running probability
-        float particleProb = 1.0;
-
-        //for all 180 rays 
-        for (int rayIndex = 0; rayIndex > 180; rayIndex ++)
+        float particleScore = 0;
+        //for all 180 rays (180 degrees, 1 deg steps, same as input scan)
+        //<TODO> possibly make this rely on data in laser in?
+        for (int rayIndex = 0; rayIndex < 180; rayIndex ++)
         {
             //get predicted measurement from position and orientation (plus rel. ray angle)
-            float predictedMeasure = _map.getDistValue(
-                particle.pose.x, particle.pose.y, rayAngle);
-            float actualMeasure = laser_data.laser.ranges[rayIndex];
+            //float predictedMeasure = _map.getDistValue(
+            //    particle.pose.x, particle.pose.y, rayAngle);
+
+            int min = 1; int max = 8250;
+            float predictedMeasure = (rand()%(max-min))+min;; //temporary for testing
             
+            float actualMeasure = laser_data.laser.ranges[rayIndex];
             double phit = prob_hit(predictedMeasure, actualMeasure);
             double pshort = prob_short(predictedMeasure, actualMeasure);
             double pmax = prob_max(actualMeasure);
@@ -301,16 +309,31 @@ void ParticleFilter::runSensorModel(particle_filter_msgs::laser_odom laser_data)
                 weight_max * pmax + weight_rand * prand;
 
             //update running probability
-            particleProb *= rayProb;
+            particleScore += rayProb;
+
+#ifdef DEBUG_SENSOR
+    //output for each ray
+
+    //printf("pshort = %f\n", pshort);
+    //printf("Ind: %d; Angle (abs): %.1f; RayProb: %f; Measurement: %.2f; actual: %.2f\n",
+        //rayIndex, rayAngle*180.0/M_PI, rayProb, actualMeasure, predictedMeasure);
+    //printf("x: %0.2f y: %0.2f rayAngle: %0.2f",particle.pose.x, particle.pose.y, rayAngle );
+#endif           
 
             //get next ray angle , [0,2pi)
             rayAngle -= (2*M_PI)/360;
             if (rayAngle < 0) {rayAngle += (2*M_PI);}
+            
         }
-        probability_list[particleIndex] = particleProb;
+        probability_list[particleIndex] = particleScore;
+#ifdef DEBUG_SENSOR
+    //output for each particle
+    //printf("Particle: %d; Score: %f\n",particleIndex+1, particleScore);
+#endif        
 
     }
 #ifdef DEBUG_SENSOR
+    //for each laser observation
     cin.get();
 #endif
 
@@ -325,9 +348,9 @@ double ParticleFilter::prob_hit(double z_true, double z)
 
     if (z >= 0 && z <= z_max)
     {
-        double eta = 1/1;
-        
-        p = eta;
+        double diff = abs(z_true - z);
+
+        p = (1/(sensorSigma*sqrt(2*M_PI)) *exp(-1.0*pow(diff,2) / (2*sensorSigma)  )   );
 
     }
 
@@ -366,12 +389,27 @@ double ParticleFilter::prob_rand(double z)
 /************************************************************************
 resample
 *************************************************************************/
-void ParticleFilter::resampleParticles(float probability_list[])
+void ParticleFilter::resampleParticles(std::vector<float> probability_list)
 {
     //<TODO> rnasci 
-        //normalize weights
-        //throw darts
 
+    //keep current locations of particles to select from
+    std::vector<particle_filter_msgs::particle> particleLocationList = _particles_list;
+
+    //set distro based on scores
+    std::discrete_distribution<int> distribution(probability_list.begin(), probability_list.end());
+    //std::discrete_distribution<int> distribution({10,10,40,10});
+
+    for (int particleIndex = 0; particleIndex < _num_particles; particleIndex ++)
+    {   
+        //draw index according to score distro
+        int index = distribution(generator);
+
+        //change particle location
+        _particles_list[particleIndex] = particleLocationList[index];
+        //perturb
+
+    }
 }
 
 /************************************************************************

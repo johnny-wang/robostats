@@ -50,6 +50,10 @@ OdomType DataLoader::parseNextData()
              * 1 for timestamp
              */
             // x, y, theta => coordinate of robot in standard odom frame when laser scan taken
+            _parsed_odom.x = atof(strs[1].c_str());
+            _parsed_odom.y = = atof(strs[2].c_str());
+            _parsed_odom.theta = atof(strs[3].c_str());
+
             _parsed_laser.pose.x = atof(strs[1].c_str());
             _parsed_laser.pose.y = atof(strs[2].c_str());
             _parsed_laser.pose.theta = atof(strs[3].c_str());
@@ -57,6 +61,7 @@ OdomType DataLoader::parseNextData()
             _parsed_laser.pose_l.y = atof(strs[5].c_str());
             _parsed_laser.pose_l.theta = atof(strs[6].c_str());
 #ifdef DEBUG_LASER
+            printf("%f %f %f\n", _parsed_odom.x, _parsed_odom.y, _parsed_odom.theta);
             printf("%f %f %f %f %f %f | %f %f\n", _parsed_laser.pose.x, _parsed_laser.pose.y, 
                    _parsed_laser.pose.theta, _parsed_laser.pose_l.x, _parsed_laser.pose_l.y, 
                    _parsed_laser.pose_l.theta, atof(strs[7].c_str()), atof(strs[strs.size()-2].c_str()));

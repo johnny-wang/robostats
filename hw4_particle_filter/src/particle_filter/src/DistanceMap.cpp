@@ -151,6 +151,7 @@ void DistanceMap::loadDistMap(std::string filename) {
         
         size_t size_of_buffer = file_size / sizeof(float);
         float* file_buffer = new float[size_of_buffer];
+
 #ifdef DEBUG_DATA
         cout << "file size: " << file_size << endl;
         cout << "buffer: " << size_of_buffer << endl;

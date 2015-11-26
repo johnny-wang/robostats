@@ -148,11 +148,13 @@ void DistanceMap::loadDistMap(std::string filename) {
         data_in.seekg(0, std::ios::end);
         file_size = data_in.tellg();
         data_in.seekg(0, std::ios::beg);
-        cout << "file size: " << file_size << endl;
         
         size_t size_of_buffer = file_size / sizeof(float);
         float* file_buffer = new float[size_of_buffer];
+#ifdef DEBUG_DATA
+        cout << "file size: " << file_size << endl;
         cout << "buffer: " << size_of_buffer << endl;
+#endif
         
         data_in.read(reinterpret_cast<char*>(file_buffer), file_size);
         

@@ -3,6 +3,7 @@
 
 #include <geometry_msgs/Pose2D.h>
 #include <particle_filter_msgs/particle.h>
+#include <random>
 
 struct State
 {
@@ -25,7 +26,7 @@ public:
 	double a1, a2, a3, a4; // error parameters for motion model
 
 	MotionUpdater();
-	MotionUpdater(double _a1, double _a2, double _a3, double _a4) : a1(_a1), a2(_a2), a3(_a3), a4(_a4) {};
+	MotionUpdater(double _a1, double _a2, double _a3, double _a4);
 
     void sample_motion_model_odometry(
         particle_filter_msgs::particle prev_state,
@@ -41,6 +42,8 @@ public:
 	
 protected:
 	double sample(double a1, double odo1, double a2, double odo2); 
+    std::random_device rd;
+    std::default_random_engine generator;
 
 };
 

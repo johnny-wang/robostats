@@ -4,6 +4,12 @@
 #include <random>
 #include <opencv2/opencv.hpp>
 
+MotionUpdater::MotionUpdater(double _a1, double _a2, double _a3, double _a4) 
+    : a1(_a1), a2(_a2), a3(_a3), a4(_a4) 
+{
+    generator = std::default_random_engine(rd());
+}
+
 void MotionUpdater::sample_motion_model_odometry(
     particle_filter_msgs::particle prev_state,
     particle_filter_msgs::particle &new_state,
@@ -107,7 +113,7 @@ void MotionUpdater::sample_motion_model_odometry_v2(
 
 double MotionUpdater::sample(double a1, double odo1, double a2, double odo2)
 {
-	std::default_random_engine generator;
+	//std::default_random_engine generator;
 //	std::normal_distribution<double> distribution(0, a1*abs(odo1)+a2*abs(odo2));
 //	printf("=== %lf %lf %lf %lf \n", a1, odo1, a2, odo2);
 	std::normal_distribution<double> distribution(0, a1*(odo1)+a2*(odo2));

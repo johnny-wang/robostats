@@ -29,9 +29,11 @@ public:
     geometry_msgs::Pose2D getOdomData();
     particle_filter_msgs::laser_odom getLaserData();
     void closeFile();
+    void setMapScale(float scale);
 
 private:
     bool initialize();
+    float _map_scale;
 
     std::string _filename;
     std::string _package_path;

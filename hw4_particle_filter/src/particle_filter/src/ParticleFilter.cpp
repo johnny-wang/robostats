@@ -43,6 +43,7 @@ bool ParticleFilter::initialize(
 {
     // Load Map (occupancy and distance maps)
     _map.loadMaps(_nh, occ_map, dist_map, num_degrees, ray_step_size);
+    _data.setMapScale(_map.getResolution());
 
     // initialize particles (uniformly)
     initializeParticles();
@@ -96,12 +97,16 @@ bool ParticleFilter::run()
 #endif
         // Laser has both odom and laser readings
         // Run motion first then sensor model 
+/*
         geometry_msgs::Pose2D odom_data = _data.getOdomData();
         runMotionModel(odom_data);
+*/
 
         particle_filter_msgs::laser_odom laser_data = _data.getLaserData();
         // Run sensor model
+/*
         runSensorModel(laser_data);
+*/
         break;
     }
     case ODOM:
@@ -147,9 +152,9 @@ void ParticleFilter::createMarker(visualization_msgs::Marker &marker, int type) 
         marker.type = visualization_msgs::Marker::POINTS;
         marker.ns = "particle_pts";
 
-        marker.scale.x = 1.5 * res;
-        marker.scale.y = 1.5 * res;
-        marker.scale.z = 1.5 * res;
+        marker.scale.x = 2.5 * res;
+        marker.scale.y = 2.5 * res;
+        marker.scale.z = 2.5 * res;
 
         marker.color.r = 1.0f;
         marker.color.g = 0.0f;
@@ -160,9 +165,9 @@ void ParticleFilter::createMarker(visualization_msgs::Marker &marker, int type) 
         marker.type = visualization_msgs::Marker::LINE_LIST;
         marker.ns = "orientation_lines";
 
-        marker.scale.x = 0.5 * res;
-        marker.scale.y = 0.5 * res;
-        marker.scale.z = 0.5 * res;
+        marker.scale.x = 1.5 * res;
+        marker.scale.y = 1.5 * res;
+        marker.scale.z = 1.5 * res;
 
         marker.color.r = 0.0f;
         marker.color.g = 1.0f;
@@ -204,6 +209,7 @@ void ParticleFilter::initializeParticles()
 #endif
 
     // Resample until we get particle in free space
+    float scale = 1/_map.getResolution();
     int id_cnt = 0;
     for (int i = 0; i < _num_particles; ) {
         particle_filter_msgs::particle p;
@@ -212,9 +218,9 @@ void ParticleFilter::initializeParticles()
         p.pose.theta = rng3(generator);
 
 #ifdef DEBUG_MOTION
-p.pose.x = 438;
+p.pose.x = 418;
 p.pose.y = 400;
-p.pose.theta = M_PI/2;
+p.pose.theta = M_PI;
 #endif
 
         if (_map.getMapValue(p.pose.x, p.pose.y) == FREE) {
@@ -256,6 +262,14 @@ Eigen::Matrix3f ParticleFilter::poseToMatrix(geometry_msgs::Pose2D pose) {
 #endif
 }
 
+geometry_msgs::Pose2D ParticleFilter::matrixToPose(Eigen::Matrix3f m) {
+    geometry_msgs::Pose2D pose;
+
+    pose.x = m(0,2);
+    pose.y = m(1,2);
+    pose.theta = atan2(m(1,0), m(1,1));
+}
+
 void ParticleFilter::printParticle(particle_filter_msgs::particle p) {
     printf("pid: %d x: %f y: %f th: %f wt: %f\n", p.particle_id, p.pose.x, p.pose.y, 
            p.pose.theta, p.weight);
@@ -272,30 +286,39 @@ void ParticleFilter::runMotionModel(geometry_msgs::Pose2D odom_data) {
 #endif
         return;
     }
-    MotionUpdater motion_updater(0.01, 0.01, 0.01, 0.01);
+
+    //MotionUpdater motion_updater(0.01, 0.01, 0.01, 0.01);
+    MotionUpdater motion_updater(0, 0, 0, 0);
 
     /* New world coordinate of particle is old world coord * inverse of odom prev * odom new
      * Latex syntax: T_{p2}^{W} = T_{p1}^{W} * (T_{p1}^{O})^{-1} * T_{p2}^{O}
      */
     for (int i = 0; i < _particles_list.size(); i++) {
-        particle_filter_msgs::particle updated_particle;
+        // Get particle_id, wt 
+        particle_filter_msgs::particle updated_particle = _particles_list[i];
 
-        motion_updater.sample_motion_model_odometry(
+        motion_updater.sample_motion_model_odometry_v2(
             _particles_list[i],     
             updated_particle, 
             _last_odom, 
             odom_data);
 
         _particles_list[i] = updated_particle;
+
 /*
         Eigen::Matrix3f p_world = poseToMatrix(_particles_list[i]);
         Eigen::Matrix3f odom_last = poseToMatrix(_last_odom);
         Eigen::Matrix3f odom_cur = poseToMatrix(odom_data);
 
         Eigen::Matrix3f p_world_new = p_world * odom_last.inverse() * odom_cur;
-*/
 
+        updated_particle.pose = matrixToPose(p_world_new);
+        _particles_list[i] = updated_particle;
+
+        printParticle(updated_particle);
+*/
     }
+
     geometry_msgs::Pose2D delta;
     delta.x = _last_odom.x - odom_data.x;
     delta.y = _last_odom.y - odom_data.y;

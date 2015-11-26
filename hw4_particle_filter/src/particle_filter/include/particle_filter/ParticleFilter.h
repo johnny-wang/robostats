@@ -52,6 +52,7 @@ private:
     void initializeParticles();
     Eigen::Matrix3f poseToMatrix(geometry_msgs::Pose2D pose);
     Eigen::Matrix3f poseToMatrix(particle_filter_msgs::particle p);
+    geometry_msgs::Pose2D matrixToPose(Eigen::Matrix3f m);
     void printParticle(particle_filter_msgs::particle p);
     void runSensorModel(particle_filter_msgs::laser_odom laser_data);
     void runMotionModel(geometry_msgs::Pose2D odom_data);

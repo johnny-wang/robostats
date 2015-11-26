@@ -10,7 +10,7 @@ const int NUM_LASER_READINGS = 180;
 //#define DEBUG_ODOM
 
 DataLoader::DataLoader(std::string fname) :
-    _filename(fname) 
+    _filename(fname)
 {
     if (!initialize()) {
         cerr << "Initialization of DataLoader object FAILED" << endl;
@@ -50,15 +50,15 @@ OdomType DataLoader::parseNextData()
              * 1 for timestamp
              */
             // x, y, theta => coordinate of robot in standard odom frame when laser scan taken
-            _parsed_odom.x = atof(strs[1].c_str());
-            _parsed_odom.y = atof(strs[2].c_str());
+            _parsed_odom.x = atof(strs[1].c_str()) / _map_scale;
+            _parsed_odom.y = atof(strs[2].c_str()) / _map_scale;
             _parsed_odom.theta = atof(strs[3].c_str());
 
-            _parsed_laser.pose.x = atof(strs[1].c_str());
-            _parsed_laser.pose.y = atof(strs[2].c_str());
+            _parsed_laser.pose.x = atof(strs[1].c_str()) / _map_scale;
+            _parsed_laser.pose.y = atof(strs[2].c_str()) / _map_scale;
             _parsed_laser.pose.theta = atof(strs[3].c_str());
-            _parsed_laser.pose_l.x = atof(strs[4].c_str());
-            _parsed_laser.pose_l.y = atof(strs[5].c_str());
+            _parsed_laser.pose_l.x = atof(strs[4].c_str()) / _map_scale;
+            _parsed_laser.pose_l.y = atof(strs[5].c_str()) / _map_scale;
             _parsed_laser.pose_l.theta = atof(strs[6].c_str());
 #ifdef DEBUG_LASER
             printf("%f %f %f\n", _parsed_odom.x, _parsed_odom.y, _parsed_odom.theta);
@@ -97,8 +97,8 @@ OdomType DataLoader::parseNextData()
             //geometry_msgs::Pose2D pose;
 
             // Get the rest of the line (not including "O")
-            float x = atof(strs[1].c_str());
-            float y = atof(strs[2].c_str());
+            float x = atof(strs[1].c_str()) / _map_scale;
+            float y = atof(strs[2].c_str()) / _map_scale;
             float theta = atof(strs[3].c_str());
             _parsed_odom.x = x;
             _parsed_odom.y = y;
@@ -141,6 +141,11 @@ particle_filter_msgs::laser_odom DataLoader::getLaserData()
 void DataLoader::closeFile()
 {
     _data_fs.close();
+}
+
+void DataLoader::setMapScale(float scale)
+{
+    _map_scale = scale;
 }
 
 /***********************************************************************************/

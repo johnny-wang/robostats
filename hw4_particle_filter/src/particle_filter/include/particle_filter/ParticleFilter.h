@@ -13,6 +13,7 @@
 // Package stuff
 #include "particle_filter/DistanceMap.h"
 #include "particle_filter/DataLoader.h"
+#include "particle_filter/MotionModel.h"
 #include <particle_filter_msgs/laser_odom.h>
 #include <particle_filter_msgs/particle.h>
 // C++ stuff
@@ -55,13 +56,14 @@ private:
     void runSensorModel(particle_filter_msgs::laser_odom laser_data);
     void runMotionModel(geometry_msgs::Pose2D odom_data);
     void visualizeParticles();
+    void visualizeLaser(geometry_msgs::Pose2D pose, sensor_msgs::LaserScan laser, float ray_angle);
     
     //sensor model prob functions
     double prob_hit(double z_true, double z);
     double prob_short(double z_true, double z);
     double prob_max(double z);
 	double prob_rand(double z);
-  double sensorSigma;//std dev for sensor model
+    double sensorSigma;//std dev for sensor model
 	double z_max; //max lidar range
 	double lambda_short; //measurement model intrinsic
     float weight_max;
@@ -71,11 +73,8 @@ private:
 	
 	void resampleParticles(std::vector<float> probability_list);
 	std::default_random_engine generator;
-  float placement_stdDev; //cm from placement for 1 std dev
-  float rotation_stdDev;
-
-
-    
+    float placement_stdDev; // cm from placement for 1 std dev
+    float rotation_stdDev;
 
     int _num_particles;
 
@@ -90,8 +89,10 @@ private:
     ros::NodeHandle _nh;
     ros::Publisher _particles_pub;
     ros::Publisher _lines_pub;
+    ros::Publisher _laser_pub;
     visualization_msgs::Marker _points_marker;
     visualization_msgs::Marker _lines_marker;
+    visualization_msgs::Marker _laser_marker;
 };
 
 #endif

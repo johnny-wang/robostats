@@ -6,7 +6,7 @@ static const int WALL = 100;
 static const int FREE = 0;
 
 //#define DEBUG_INIT
-#define DEBUG_DATA
+//#define DEBUG_DATA
 //#define DEBUG_MOTION
 //#define DEBUG_SENSOR
 using namespace std; // for debugging for now
@@ -48,17 +48,18 @@ bool ParticleFilter::initialize(
 
     //initialize model parameters
     //sensor models
-        sensorSigma = 0.025; //cm
+        sensorSigma = 0.25; //cm
         z_max =  8250; //sensor model max range(not validated) cm
-        lambda_short = 0.0003; //sensor model lambda short (not validated)
+        lambda_short = 0.003; //sensor model lambda short (not validated)
         //tuning params for weighting params
         weight_max = 1;
-        weight_rand = 0.75;
+        weight_rand = 0.05;
         weight_hit = 1;
-        weight_short = 0.5;
+        weight_short = 0.05;
 
     //Reseeding params
-        int placement_stdDev = 15; //cm from placement for 1 std dev
+        placement_stdDev = 0.6; //cm from placement for 1 std dev
+        rotation_stdDev = 0.05;//rad std dev for resample noise
 }
 
 /*
@@ -326,7 +327,12 @@ void ParticleFilter::runSensorModel(particle_filter_msgs::laser_odom laser_data)
             if (rayAngle < 0) {rayAngle += (2*M_PI);}
             
         }
-        probability_list[particleIndex] = particleScore;
+        if (_map.getMapValue(particle.pose.x,particle.pose.y) == FREE)
+        {
+            probability_list[particleIndex] = particleScore;
+        } else {
+            probability_list[particleIndex] = 0;
+        }
 #ifdef DEBUG_SENSOR
     //output for each particle
     //printf("Particle: %d; Score: %f\n",particleIndex+1, particleScore);
@@ -406,9 +412,41 @@ void ParticleFilter::resampleParticles(std::vector<float> probability_list)
         //draw index according to score distro
         int index = distribution(generator);
 
-        //change particle location
-        _particles_list[particleIndex] = particleLocationList[index];
-        //perturb
+        bool invalidPosition = true;
+        int limit = 0;
+        while (invalidPosition && limit < 25)
+        {
+            //change particle location w perturbations
+            //x
+            std::normal_distribution<float> distributionX(
+                particleLocationList[index].pose.x,placement_stdDev);
+            float x = distributionX(generator);
+            //y
+            std::normal_distribution<float> distributionY(
+                particleLocationList[index].pose.y,placement_stdDev);
+            float y = distributionY(generator);
+            //th
+            std::normal_distribution<float> distributionTH(
+                particleLocationList[index].pose.theta,rotation_stdDev);
+             float th = distributionTH(generator);
+
+            if (x < _map.getXSize() && x > 0 && y < _map.getYSize() && y > 0 )
+            {
+                if (_map.getMapValue(x,y) == FREE) 
+                {    
+                    _particles_list[particleIndex].pose.x = x;
+                    _particles_list[particleIndex].pose.y = y;
+                    _particles_list[particleIndex].pose.theta = th;
+                    invalidPosition = false;
+//#define DEBUG_RESAMPLE
+#ifdef  DEBUG_RESAMPLE                  
+    printf("Relocated Particle: Base %0.2f,%0.2f,%0.2f; Now %0.2f.%0.2f.%0.2f",
+        )
+#endif
+                }
+            }
+            limit ++;
+        }
 
     }
 }

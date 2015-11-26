@@ -71,6 +71,8 @@ private:
 	
 	void resampleParticles(std::vector<float> probability_list);
 	std::default_random_engine generator;
+  float placement_stdDev; //cm from placement for 1 std dev
+  float rotation_stdDev;
 
 
     

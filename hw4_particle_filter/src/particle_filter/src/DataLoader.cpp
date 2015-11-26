@@ -51,7 +51,7 @@ OdomType DataLoader::parseNextData()
              */
             // x, y, theta => coordinate of robot in standard odom frame when laser scan taken
             _parsed_odom.x = atof(strs[1].c_str());
-            _parsed_odom.y = = atof(strs[2].c_str());
+            _parsed_odom.y = atof(strs[2].c_str());
             _parsed_odom.theta = atof(strs[3].c_str());
 
             _parsed_laser.pose.x = atof(strs[1].c_str());

@@ -4,6 +4,7 @@ project(particle_filter)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
+find_package(OpenCV 2.4.9 REQUIRED HINTS ~/ibn/opencv/installed/)
 find_package(catkin REQUIRED COMPONENTS
   nav_msgs
   roscpp
@@ -12,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   roslib
   particle_filter_msgs
   pcl_ros
+  cv_bridge
 )
 
 ## System dependencies are found with CMake's conventions
@@ -136,7 +138,7 @@ include_directories(
 ## Declare a C++ executable
 add_executable(load_map_node src/load_map.cpp src/DistanceMap.cpp)
 add_executable(load_data_node src/load_data.cpp)
-add_executable(main_node src/main.cpp src/DistanceMap.cpp src/ParticleFilter.cpp src/DataLoader.cpp)
+add_executable(main_node src/main.cpp src/DistanceMap.cpp src/ParticleFilter.cpp src/DataLoader.cpp src/MotionModel.cpp)
 #add_executable(test_node src/test_cb.cpp)
 
 ## Add cmake target dependencies of the executable

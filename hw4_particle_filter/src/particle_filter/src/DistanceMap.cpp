@@ -7,6 +7,9 @@ static const int WALL = 100;
 static const int FREE = 0;
 
 //#define DEBUG
+//#define DEBUG_INIT
+//#define DEBUG_DATA
+//#define DEBUG_SAVE
 using namespace std;  // for debugging
 
 DistanceMap::DistanceMap() :
@@ -54,6 +57,9 @@ unsigned int DistanceMap::getNumMeasurements() {
     return _num_measurements;
 }
 
+/*
+ * Input is map min to max. i.e. 0 to 800.
+ */
 unsigned int DistanceMap::getMapValue(int x, int y) {
     return _oc_map[x][y];
 }
@@ -74,6 +80,37 @@ float DistanceMap::getDistValue(float x, float y, float theta) {
     x /= _resolution;
     y /= _resolution;
     return _dist_map[x][y][multiplier];
+}
+
+sensor_msgs::LaserScan DistanceMap::getLaserScans(float x, float y, float theta) {
+    // store laser scans
+    sensor_msgs::LaserScan my_laser;
+    my_laser.header.frame_id = "laser_frame";
+    // 0 to 179 because there are 180 readings
+    my_laser.angle_min = 0;
+    my_laser.angle_max = 179 * PI / 180; // radians
+    my_laser.angle_increment = PI / 180;
+    my_laser.range_min = 0.0;
+    my_laser.range_max = 8250;  // in cm, heuristically 8183 cm
+    my_laser.ranges.resize(180);
+
+    // Need to convert to map's coordinate which is 10cm x 10cm per cell
+    x /= _resolution;
+    y /= _resolution;
+
+    for (int i=0; i<180; i++) {
+        my_laser.ranges[i] = getDistValue(x, y, theta);
+    }
+
+    return my_laser;
+}
+
+std::vector<float> DistanceMap::getDistVal(float x, float y) {
+//cout << " x: " << x << " y: " << y << endl;
+    x /= _resolution;
+    y /= _resolution;
+//cout << " x: " << x << " y: " << y << endl;
+    return _dist_map[x][y];
 }
 
 unsigned int DistanceMap::getNumDistX() {
@@ -99,33 +136,75 @@ void DistanceMap::loadDistMap(std::string filename) {
 
     std::string fname = _package_path + "/data/map/" + filename;
 
-/*
-cout << fname << endl;
-    FILE* file = fopen(fname.c_str(), "r");
-
-    if (NULL == file) {
-        printf("Failed to open '%s'\n", fname.c_str());
-        exit(-1);
-    }
-    int row, col;
-    while(!feof(file)) {
-        while(fscanf(file, "%d %d ", &row, &col)) {
-            float tmp;
-//            cout << "r: " << row << " c: " << col << endl;
-            for (int i = 0; i < _num_measurements; i++) {
-                fscanf(file, "%f ", &tmp);
-//                cout << " " << tmp;
-            }
-//            cout << endl;
-            fscanf(file, "%[^\n]\n", NULL); // skip the newline
-//cin.get();
-//break;
-        }
-    }
-fclose(file);
-*/
     boost::timer t;
 
+    // Load binary file
+    data_in.open(fname.c_str(), std::ios::binary);
+
+    if (data_in.is_open()) {
+        std::vector<float> all_in;
+        data_in.unsetf(std::ios::skipws);
+        std::streampos file_size;
+        data_in.seekg(0, std::ios::end);
+        file_size = data_in.tellg();
+        data_in.seekg(0, std::ios::beg);
+        cout << "file size: " << file_size << endl;
+        
+        size_t size_of_buffer = file_size / sizeof(float);
+        float* file_buffer = new float[size_of_buffer];
+        cout << "buffer: " << size_of_buffer << endl;
+        
+        data_in.read(reinterpret_cast<char*>(file_buffer), file_size);
+        
+        all_in = std::vector<float>(file_buffer, file_buffer + size_of_buffer);
+        
+        free(file_buffer);
+
+        _dist_map.clear();
+        _dist_map.resize(_x_max);
+
+        // Convert all data to _dist_map format
+        for (int i = 0; i < _x_max; i++) {
+            std::vector<std::vector<float>> tmp(_y_max);
+            for (int j = 0; j < _y_max; j++) {
+                int row_val = i * _num_measurements * _x_max;
+                int col_val = j * _num_measurements;
+                int last_col = ((j+1) * _num_measurements);
+
+                std::vector<float>::const_iterator first = all_in.begin() + row_val + col_val;
+                std::vector<float>::const_iterator last  = all_in.begin() + row_val + last_col;
+                std::vector<float> dist(first, last);
+
+#ifdef DEBUG_DATA
+                int start = row_val + col_val;
+                int end = row_val + last_col;
+                int diff = end - start;
+                printf("%d %d %d %d\n", start, end, diff, last_col);
+                bool zeros = std::all_of(dist.begin(), dist.end(), [](int i) { return i==0; });
+                if (!zeros) {
+                    cout << "---------------------------------------------------------" << endl;
+                    for (int z = 0; z < dist.size(); z++) {
+                        cout << dist[z] << " ";
+                    }
+                    cout << dist.size() << endl;
+                    cin.get();
+                }
+#endif
+                tmp[j] = dist;
+            }
+#ifdef DEBUG_DATA
+            cout << "tmp size: " << tmp.size() << endl;
+#endif
+            _dist_map[i] = tmp;
+        }
+    } else {
+    // file doesn't exist, create the distance map then save it.
+        cout << "File doesn't exist: " << fname << endl;
+        create_distance_map();
+        saveDistMap(filename);
+    }
+
+/*
     data_in.open(fname.c_str());
 
     if (data_in.is_open()) {
@@ -172,13 +251,13 @@ fclose(file);
                 cout << "Reading file line: " << count << endl;
             }
         }
-
     } else {
     // file doesn't exist, create the distance map then save it.
         cout << "File doesn't exist: " << fname << endl;
         create_distance_map();
         saveDistMap(filename);
     }
+*/
 
 //print_dist_map();
 
@@ -257,8 +336,9 @@ void DistanceMap::loadOccMap(std::string filename) {
 
                 for (it = strs.begin(); it != strs.end(); it++) {
                     float input = atof(it->c_str());
-                    if (input >= 0) { input = 1-input;    // b/c the file has occupancy backwards
-                                            // 1 = occupied; 0 = not occupied
+                    if (input >= 0) { 
+                        input = 1-input;    // b/c the file has occupancy backwards
+                        // 1 = occupied; 0 = not occupied
                         if (input > 0.9) {   // occupied space
                             _nav_occ_map.data[map_data_counter++] = 100;// // map takes 0-100
                         } else if ((input <= 0.9) && (input > 0.1)) {
@@ -311,9 +391,14 @@ void DistanceMap::loadMaps(
  * Only save the calculated values at free cells
  */
 void DistanceMap::saveDistMap(std::string filename) {
-    ofstream data_out;
+#ifdef DEBUG_SAVE
+    boost::timer t;
+#endif
+
+//    ofstream data_out;
     filename = _package_path + "/data/map/" + filename;
-    data_out.open(filename.c_str());
+//    data_out.open(filename.c_str());
+    std::ofstream data_out(filename.c_str(), std::ios::binary | std::ios::out);
 
     cout << "Saving distance map" << endl;
 
@@ -321,6 +406,15 @@ void DistanceMap::saveDistMap(std::string filename) {
         cerr << "ERROR: Unable to open file: " << filename << endl;
         return;
     }
+
+    // Write binary to file
+    for (int x = 0; x < _dist_map.size(); x++) {
+        for (int y = 0; y < _dist_map[x].size(); y++) {
+            const char* buffer = reinterpret_cast<const char*>(&_dist_map[x][y][0]);
+            data_out.write(buffer, _dist_map[x][y].size() * sizeof(float));
+        }
+    }
+/*
     // Write to file in this format:
     for (int x = 0; x < _x_max; x++) {
         for (int y = 0; y < _y_max; y++) {
@@ -336,8 +430,13 @@ void DistanceMap::saveDistMap(std::string filename) {
             }
         }
     }
+*/
 
-    cout << "Distance map saved to " << filename << endl;
+#ifdef DEBUG_SAVE
+    std::cout << "time: " << t.elapsed() << std::endl;
+//    std::cout << "lines: " << lines_written << std::endl;
+#endif
+    std::cout << "Distance map saved to " << filename << std::endl;
     data_out.close();
 }
 
@@ -362,10 +461,13 @@ void DistanceMap::initialize() {
         cerr << "ERROR: Need to load occupancy map first!" << endl;
         exit(-1);
     }
+#ifdef DEBUG_INIT
+    cout << "Initializing internal occupancy map" << endl;
+#endif
 
     for (int x = 0; x < _x_max; x++) {
         std::vector<int> y_data;
-        for (int y = 0; y < _x_max; y++) {
+        for (int y = 0; y < _y_max; y++) {
             int tmp = _nav_occ_map.data[_x_max * x + y];
             y_data.push_back(tmp);
         }
@@ -392,10 +494,12 @@ void DistanceMap::create_distance_map() {
     boost::timer t;
 #endif
 
+    _dist_map.clear();
     int lines_written = 0;
+
     for (int x = 0; x < _x_max; x++) {
         std::vector< std::vector<float> > y_data;
-        y_data.reserve(_x_max * _y_max);   // pre-allocate
+        //y_data.reserve(_x_max * _y_max);   // pre-allocate
 
         for (int y = 0; y < _x_max; y++) {
 
@@ -502,4 +606,26 @@ void DistanceMap::print_dist_map() {
 void DistanceMap::print_occ_map() {
     cout << "Occupancy Map size" << endl;
     cout << _nav_occ_map.data.size() << endl;
+}
+
+void DistanceMap::checkMaps() {
+    for (int x = 0; x < _x_max; x++) {
+        for (int y = 0; y < _y_max; y++) {
+            std::vector<float> values = getDistVal(x, y);
+            bool zeros = std::all_of(values.begin(), values.end(), [](int i) { return i==0; });
+            if (((getMapValue(x, y) == UNKNOWN) || (getMapValue(x, y) == WALL)) && (zeros)) {
+                printf("GOOD x: %d y: %d\n", x, y);
+            } else if ((getMapValue(x, y) == FREE) && (!zeros)) {
+                printf("GOOD x: %d y: %d\n", x, y);
+            } else {
+                printf("BAD!!! x: %d y: %d %d\n", x, y, zeros);
+            }
+            cout << getMapValue(x,y) << endl;
+            //for (int i=0; i<360; i++) {
+            //    cout << values[i] << " ";
+            //}
+            //cout << endl;
+            cout << "**********************************************" << endl;
+        }
+    }
 }

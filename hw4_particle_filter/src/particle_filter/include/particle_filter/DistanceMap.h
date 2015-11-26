@@ -4,6 +4,7 @@
 #include <ros/ros.h>
 #include <ros/package.h>
 #include <nav_msgs/OccupancyGrid.h>
+#include <sensor_msgs/LaserScan.h>
 
 #include <stdio.h>
 #include <math.h>
@@ -32,6 +33,8 @@ public:
     unsigned int getNumDistY();
     unsigned int getMapValue(int x, int y);
     float getDistValue(float x, float y, float theta);
+    sensor_msgs::LaserScan getLaserScans(float x, float y, float theta);
+    std::vector<float> getDistVal(float x, float y);
 
     void loadMaps(ros::NodeHandle nh, 
         std::string occ_map, 
@@ -52,6 +55,7 @@ protected:
     float calculate_dist(int x, int y, float angle);
     void print_dist_map();
     void print_occ_map();
+    void checkMaps();
 
     std::string _package_path;
 

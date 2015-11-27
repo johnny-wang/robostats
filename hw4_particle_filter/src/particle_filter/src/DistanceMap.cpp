@@ -154,7 +154,7 @@ void DistanceMap::loadDistMap(std::string filename) {
         
         all_in = std::vector<float>(file_buffer, file_buffer + size_of_buffer);
         
-        free(file_buffer);
+        delete(file_buffer);
 
         _dist_map.clear();
         _dist_map.resize(_y_max);
@@ -411,6 +411,13 @@ void DistanceMap::saveDistMap(std::string filename) {
         return;
     }
 
+#ifdef DEBUG_SAVE
+    cout << "map size: " << endl;
+    cout << _dist_map.size() << endl;
+    cout << _dist_map[0].size() << endl;
+    cout << _dist_map[0][0].size() << endl;
+#endif
+
     // Write binary to file
     for (int y = 0; y < _dist_map.size(); y++) {
         for (int x = 0; x < _dist_map[y].size(); x++) {
@@ -503,7 +510,7 @@ void DistanceMap::initialize() {
  */
 void DistanceMap::create_distance_map() {
 
-    cout << "Creating new distance map" << endl;
+    printf("Creating new distance map\n");
 
 #ifdef DEBUG_DIST
     boost::timer t;
@@ -511,12 +518,14 @@ void DistanceMap::create_distance_map() {
 
     _dist_map.clear();
     int lines_written = 0;
+    int total_lines = _y_max * _x_max;
+    
 
     for (int y = 0; y < _y_max; y++) {
         std::vector< std::vector<float> > x_data;
         //y_data.reserve(_y_max * _x_max);   // pre-allocate
 
-        for (int x = 0; y < _x_max; x++) {
+        for (int x = 0; x < _x_max; x++) {
 
             std::vector<float> dist(_num_measurements);
 
@@ -543,9 +552,13 @@ void DistanceMap::create_distance_map() {
 #ifdef DEBUG
                 cout << "final angle: " << angle << endl;
 #endif 
-                lines_written++;
             }
+            lines_written++;
             x_data.push_back(dist);
+
+            if ((lines_written % 10000) == 0) {
+                printf("%d lines written (out of %d)\n", lines_written, total_lines);
+            }
         }
         _dist_map.push_back(x_data);
     }

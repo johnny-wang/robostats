@@ -57,7 +57,7 @@ private:
     void runSensorModel(particle_filter_msgs::laser_odom laser_data);
     void runMotionModel(geometry_msgs::Pose2D odom_data);
     void visualizeParticles();
-    void visualizeLaser(geometry_msgs::Pose2D pose, sensor_msgs::LaserScan laser, float ray_angle);
+    void visualizeLaser(geometry_msgs::Pose2D pose, std::vector<float> laser, float ray_angle);
     
     //sensor model prob functions
     double prob_hit(double z_true, double z);

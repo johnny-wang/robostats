@@ -83,27 +83,50 @@ float DistanceMap::getDistValue(float x, float y, float theta) {
     return _dist_map[y][x][multiplier];
 }
 
-sensor_msgs::LaserScan DistanceMap::getLaserScans(float x, float y, float theta) {
-    // store laser scans
-    sensor_msgs::LaserScan my_laser;
-    my_laser.header.frame_id = "laser_frame";
-    // 0 to 179 because there are 180 readings
-    my_laser.angle_min = 0;
-    my_laser.angle_max = 179 * PI / 180; // radians
-    my_laser.angle_increment = PI / 180;
-    my_laser.range_min = 0.0;
-    my_laser.range_max = 8250;  // in cm, heuristically 8183 cm
-    my_laser.ranges.resize(180);
+//sensor_msgs::LaserScan DistanceMap::getLaserScans(float x, float y, float theta) {
+//    // store laser scans
+//    sensor_msgs::LaserScan my_laser;
+//    my_laser.header.frame_id = "laser_frame";
+//    // 0 to 179 because there are 180 readings
+//    my_laser.angle_min = 0;
+//    my_laser.angle_max = 179 * PI / 180; // radians
+//    my_laser.angle_increment = PI / 180;
+//    my_laser.range_min = 0.0;
+//    my_laser.range_max = 8250;  // in cm, heuristically 8183 cm
+//    my_laser.ranges.resize(180);
+//
+//    for (int i=0; i<180; i++) {
+//        my_laser.ranges[i] = getDistValue(x, y, theta);
+//    }
+//
+//    return my_laser;
+//}
 
-    for (int i=0; i<180; i++) {
-        my_laser.ranges[i] = getDistValue(x, y, theta);
-    }
-
-    return my_laser;
+std::vector<float> DistanceMap::getAllLaser(float x, float y) {
+    return _dist_map[y][x];
 }
 
-std::vector<float> DistanceMap::getDistVal(float x, float y) {
-    return _dist_map[y][x];
+std::vector<float> DistanceMap::getLaserVals(float x, float y, float start_theta) {
+    int multiplier = (start_theta + (_angle_step_size/2)) / _angle_step_size;
+    int count = 1;
+    std::vector<float> ret_vec(180);
+    
+    while (multiplier < _num_measurements) {
+//printf("%d %f %d\n", count, _dist_map[y][x][multiplier], ret_vec.size());
+        if (count == 180) {
+            break;
+        }
+        ret_vec[count-1] = _dist_map[y][x][multiplier];
+
+        if (multiplier == (_num_measurements - 1)) {
+            multiplier = 0;
+        } else {
+            multiplier++;
+        }
+        count++;
+    }
+
+    return ret_vec;
 }
 
 int DistanceMap::getNumDistX() {
@@ -642,7 +665,7 @@ void DistanceMap::checkMaps() {
 
     for (int y = 0; y < _y_max; y++) {
         for (int x = 0; x < _x_max; x++) {
-            std::vector<float> values = getDistVal(x, y);
+            std::vector<float> values = getAllLaser(x, y);
 
             if ((getMapValue(x, y) >= FREE) && (getMapValue(x, y) < WALL)) {
                 free_space++;

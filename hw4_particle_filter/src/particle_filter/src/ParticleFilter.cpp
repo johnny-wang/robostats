@@ -50,18 +50,18 @@ bool ParticleFilter::initialize(
 
     //initialize model parameters
     //sensor models
-    sensorSigma = 0.25; //cm
+    sensorSigma = 0.025; //cm
     z_max =  8250; //sensor model max range(not validated) cm
     lambda_short = 0.003; //sensor model lambda short (not validated)
     //tuning params for weighting params
     weight_max = 1;
-    weight_rand = 0.05;
+    weight_rand = 0.005;
     weight_hit = 1;
     weight_short = 0.05;
 
     //Reseeding params
-    placement_stdDev = 0.06; //cm from placement for 1 std dev
-    rotation_stdDev = 0.05;  // rad std dev for resample noise
+    placement_stdDev = 0.5; //cm from placement for 1 std dev
+    rotation_stdDev = 0.1;  // rad std dev for resample noise
 }
 
 /*

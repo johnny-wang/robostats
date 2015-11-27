@@ -35,8 +35,8 @@ public:
     int getMapValue(int x, int y);
     float getDistValue(float x, float y, float theta);
     //sensor_msgs::LaserScan getLaserScans(float x, float y, float theta);
-    std::vector<float> getAllLaser(float x, float y);
-    std::vector<float> getLaserVals(float x, float y, float theta);
+    void getAllLaser(float x, float y, std::vector<float> &laser_vec);
+    void getLaserVals(float x, float y, float theta, std::vector<float> &laser_vec);
 
     void loadMaps(ros::NodeHandle nh, 
         std::string occ_map, 

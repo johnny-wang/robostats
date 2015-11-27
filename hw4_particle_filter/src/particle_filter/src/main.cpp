@@ -17,6 +17,7 @@ int main(int argc, char** argv) {
     int msg_queue_size;
     int num_degrees;
     double ray_step;
+    double sigma;
 
     // Get values from launch file
     nh.getParam("laser_topic", laser_topic);
@@ -26,6 +27,7 @@ int main(int argc, char** argv) {
     nh.getParam("num_degrees", num_degrees);
     nh.getParam("ray_step_size", ray_step);
     nh.getParam("odom_file", data_file);
+    nh.getParam("sigma", sigma);
 
 //#define DEBUG
 #ifdef DEBUG
@@ -46,7 +48,8 @@ int main(int argc, char** argv) {
         occ_map_name,
         dist_map_name,
         num_degrees,
-        (float)ray_step
+        (float)ray_step,
+        (float)sigma
         );
 
     while (nh.ok()) {

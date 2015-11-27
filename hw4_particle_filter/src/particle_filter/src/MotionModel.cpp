@@ -95,9 +95,12 @@ void MotionUpdater::sample_motion_model_odometry_v2(
 
 	cv::Mat t_w2_w = R_wo*t_12_o + t_w1_w;
 
-	double d_rot1 = atan2(t_w2_w.at<double>(1,0)-prev_state.pose.y, t_w2_w.at<double>(0,0)-prev_state.pose.x) - prev_state.pose.theta;
-	double d_trans = sqrt((t_w2_w.at<double>(1,0)-prev_state.pose.y)*(t_w2_w.at<double>(1,0)-prev_state.pose.y)
-				+ (t_w2_w.at<double>(0,0)-prev_state.pose.x)*(t_w2_w.at<double>(0,0)-prev_state.pose.x));
+	double d_rot1 = atan2( t_w2_w.at<double>(1,0)-prev_state.pose.y, 
+                           t_w2_w.at<double>(0,0)-prev_state.pose.x ) - prev_state.pose.theta;
+	double d_trans = sqrt( (t_w2_w.at<double>(1,0)-prev_state.pose.y) 
+                            * (t_w2_w.at<double>(1,0)-prev_state.pose.y) 
+                            + (t_w2_w.at<double>(0,0)-prev_state.pose.x)
+                            * (t_w2_w.at<double>(0,0)-prev_state.pose.x) );
 	double d_rot2 = odom_cur.theta - odom_prev.theta - d_rot1; 
 
 	double d_rot1_noise = d_rot1 - sample(a1, abs(d_rot1), a2, d_trans);

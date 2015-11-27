@@ -3,11 +3,11 @@
     <param name="odom_file" type="str" value="robotdata1.log" />
     <param name="laser_topic" type="str" value="laser_odom" />
     <param name="odom_topic" type="str" value="odom" />
-    <param name="particles" type="int" value="10000" />
+    <param name="particles" type="int" value="30000" />
     <param name="msg_queue_size" type="int" value="100" />
     <param name="num_degrees" type="int" value="360" />
     <param name="ray_step_size" type="double" value="0.25" />
-    <param name="data_file" type="str" value="" />
+    <param name="sigma" type="double" value="15000" />
 
     <node name="main_nod" type="main_node" pkg="particle_filter" output="screen"/>
 <!--

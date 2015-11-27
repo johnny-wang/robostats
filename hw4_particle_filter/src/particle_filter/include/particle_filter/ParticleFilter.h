@@ -40,7 +40,8 @@ public:
                    std::string occ_file,
                    std::string dist_file,
                    int num_dgrees,
-                   float ray_step
+                   float ray_step,
+                   float sigma
                   );
 
     bool run();
@@ -57,7 +58,7 @@ private:
     void runSensorModel(particle_filter_msgs::laser_odom laser_data);
     void runMotionModel(geometry_msgs::Pose2D odom_data);
     void visualizeParticles();
-    void visualizeLaser(geometry_msgs::Pose2D pose, std::vector<float> laser, float ray_angle);
+    void visualizeLaser(geometry_msgs::Pose2D pose, std::vector<float> laser, float ray_angle, int type);
     
     //sensor model prob functions
     double prob_hit(double z_true, double z);
@@ -77,6 +78,8 @@ private:
     float placement_stdDev; // cm from placement for 1 std dev
     float rotation_stdDev;
 
+    float _sigma;
+
     int _num_particles;
 
     DistanceMap _map;
@@ -91,9 +94,11 @@ private:
     ros::Publisher _particles_pub;
     ros::Publisher _lines_pub;
     ros::Publisher _laser_pub;
+    ros::Publisher _laser_true_pub;
     visualization_msgs::Marker _points_marker;
     visualization_msgs::Marker _lines_marker;
     visualization_msgs::Marker _laser_marker;
+    visualization_msgs::Marker _laser_true_marker;
 };
 
 #endif

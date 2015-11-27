@@ -9,6 +9,7 @@ static const int FREE = 0;
 //#define DEBUG_DATA
 //#define DEBUG_MOTION
 //#define DEBUG_SENSOR
+//#define DEBUG_LASER
 using namespace std; // for debugging for now
 
 ParticleFilter::ParticleFilter(
@@ -74,7 +75,7 @@ bool ParticleFilter::run()
     static int all_cnt = 0;
     static int odom_cnt = 0;
 #ifdef DEBUG_DATA
-    cout << "Running" << endl;
+    cout << "Running particle filter" << endl;
 #endif
 
     OdomType data = _data.parseNextData();
@@ -82,9 +83,7 @@ bool ParticleFilter::run()
     switch(data) {
     case NONE:
     {
-#ifdef DEBUG_DATA
         cout << "No more data" << endl;
-#endif
         return false;
         break;
     }
@@ -93,20 +92,17 @@ bool ParticleFilter::run()
 #ifdef DEBUG_DATA
         cout << "Laser " << laser_cnt << " all " << all_cnt << endl;
         laser_cnt++;
-        all_cnt++;
 #endif
         // Laser has both odom and laser readings
         // Run motion first then sensor model 
-
         geometry_msgs::Pose2D odom_data = _data.getOdomData();
         runMotionModel(odom_data);
 
-
-        particle_filter_msgs::laser_odom laser_data = _data.getLaserData();
         // Run sensor model
-
+        particle_filter_msgs::laser_odom laser_data = _data.getLaserData();
         runSensorModel(laser_data);
 
+        all_cnt++;
         break;
     }
     case ODOM:
@@ -114,11 +110,12 @@ bool ParticleFilter::run()
 #ifdef DEBUG_DATA
         cout << "Odom " << odom_cnt << " all " << all_cnt << endl;
         odom_cnt++;
-        all_cnt++;
 #endif
         geometry_msgs::Pose2D odom_data = _data.getOdomData();
         // Run motion model
         runMotionModel(odom_data);
+
+        all_cnt++;
         break;
     }
     default:
@@ -128,6 +125,8 @@ bool ParticleFilter::run()
         break;
     }
     }
+    printf("Processed %4d log data messages\n", all_cnt);
+    
     visualizeParticles();
     return true;
 }
@@ -177,9 +176,9 @@ void ParticleFilter::createMarker(visualization_msgs::Marker &marker, int type) 
         marker.type = visualization_msgs::Marker::POINTS;
         marker.ns = "laser_pts";
 
-        marker.scale.x = 1.5 * res;
-        marker.scale.y = 1.5 * res;
-        marker.scale.z = 1.5 * res;
+        marker.scale.x = 0.5 * res;
+        marker.scale.y = 0.5 * res;
+        marker.scale.z = 0.5 * res;
 
         marker.color.r = 1.0f;
         marker.color.g = 1.0f;
@@ -198,8 +197,6 @@ void ParticleFilter::initializeParticles()
     // create RNG, uniform & normal for each of the x,y,theta
     unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
     std::default_random_engine generator(seed);
-    //std::uniform_real_distribution<double> rng1(y_min*res, y_max*res);
-    //std::uniform_real_distribution<double> rng2(x_min*res, x_max*res);
     std::uniform_real_distribution<double> rng1(x_min, x_max);
     std::uniform_real_distribution<double> rng2(y_min, y_max);
     std::uniform_real_distribution<double> rng3(-M_PI, M_PI);
@@ -218,7 +215,8 @@ void ParticleFilter::initializeParticles()
         p.pose.y = rng2(generator);
         p.pose.theta = rng3(generator);
 
-#ifdef DEBUG_MOTION
+#ifdef DEBUG_INIT
+// This is the 'start' of log file 1
 p.pose.x = 418;
 p.pose.y = 400;
 p.pose.theta = M_PI;
@@ -353,25 +351,20 @@ void ParticleFilter::runSensorModel(particle_filter_msgs::laser_odom laser_data)
         particle_filter_msgs::particle particle = _particles_list[particleIndex];
 
         //get right ray angle in radians, [0,2pi)
-        float rayAngle = particle.pose.theta + M_PI/2.0;
+        float rayAngle = particle.pose.theta - M_PI/2.0;
         if (rayAngle >= 2*M_PI) {rayAngle -= (2*M_PI);}
 
 #ifdef DEBUG_SENSOR
         //_map.checkMaps();
         printf("laser scans at %f %f %f\n", particle.pose.x, particle.pose.y, rayAngle);
-        sensor_msgs::LaserScan laser = _map.getLaserScans(particle.pose.x, particle.pose.y, rayAngle);
+//        sensor_msgs::LaserScan laser = _map.getLaserScans(particle.pose.x, particle.pose.y, rayAngle);
+        std::vector<float> laser = _map.getLaserVals(particle.pose.x, particle.pose.y, rayAngle);
         
-        std::vector<float> pl(180);
-        pl = _map.getDistVal(particle.pose.x, particle.pose.y);
-        for (int i=0; i<pl.size(); i++) {
-            cout << pl[i] << " ";
-        }
-        cout << endl;
-        pl = _map.getDistVal(particle.pose.y, particle.pose.x);
-        for (int i=0; i<pl.size(); i++) {
-            cout << pl[i] << " ";
-        }
-        cout << endl;
+//        pl = _map.getAllLaser(particle.pose.y, particle.pose.x);
+//        for (int i=0; i<pl.size(); i++) {
+//            cout << pl[i] << " ";
+//        }
+//        cout << endl;
         
         visualizeLaser(particle.pose, laser, rayAngle);
 #endif
@@ -561,8 +554,11 @@ void ParticleFilter::visualizeParticles() {
         // Draw line (2 points) to show orientation
         // Multiply by map resolution to properly represent where they are on the map
         geometry_msgs::Point p1;
-        p1.x = 0.5*res*cos(_particles_list[i].pose.theta)+ p.x;
-        p1.y = 0.5*res*sin(_particles_list[i].pose.theta)+ p.y;
+
+//cout << "cos " << cos(_particles_list[i].pose.theta) << endl;
+//cout << "sin " << sin(_particles_list[i].pose.theta) << endl;
+        p1.x = 0.25*res*sin(_particles_list[i].pose.theta)+ p.x;
+        p1.y = 0.25*res*cos(_particles_list[i].pose.theta)+ p.y;
         p1.z = 0;
         l_vec.push_back(p);
         l_vec.push_back(p1);
@@ -577,7 +573,7 @@ void ParticleFilter::visualizeParticles() {
         //printf("%f %f %f\n", p_marker.pose.position.x, p_marker.pose.position.y, yaw);
 
         //printf("%f %f \n", p.x, p.y);
-        //printf("%f %f %f %f\n", p.x, p.y, p1.x, p1.y);
+        //printf("%f %f %f %f %f\n", p.x, p.y, p1.x, p1.y, _particles_list[i].pose.theta*180/M_PI);
     }
     _points_marker.points = p_vec;
     _lines_marker.points = l_vec;
@@ -593,29 +589,43 @@ void ParticleFilter::visualizeParticles() {
 
 void ParticleFilter::visualizeLaser(
     geometry_msgs::Pose2D pose, 
-    sensor_msgs::LaserScan laser,
+    std::vector<float> laser,
     float ray_angle_start) 
 {
     // 1 degree in radian
     float angle_step = 1 * M_PI / 180;
+    std::vector<geometry_msgs::Point> p_vec;
+    int res = _map.getResolution();
 
     createMarker(_laser_marker, 3);
 
-cout << "visualizing lasers" << endl;
+#ifdef DEBUG_LASER
+    std::vector<float> vec_ang(180);    // laser scans are 180 degrees
+    vec_ang = _map.getLaserVals(pose.x, pose.y, ray_angle_start);
+    std::vector<float> pl(360);
+    pl = _map.getAllLaser(pose.x, pose.y);
+    printf("vec size: %lu\n", vec_ang.size());
 
-    std::vector<geometry_msgs::Point> p_vec;
+    for (int i=0; i<pl.size(); i++) {
+        printf("%d: %f %f %f\n", i, pl[i], laser[i], vec_ang[i]);
+    }
+    cout << endl;
+    cout << "visualizing lasers" << endl;
+    cout << laser.size() << endl;
+#endif
 
-cout << laser.ranges.size() << endl;
-    for (int i = 0; i < laser.ranges.size(); i++) {
+    for (int i = 0; i < laser.size(); i++) {
         // Save distances as points
         // calculate point's location wrt particle location
         geometry_msgs::Point p;
-        p.x = laser.ranges[i] * cos(pose.theta + (i*angle_step)) * _map.getResolution();
-        p.y = laser.ranges[i] * sin(pose.theta + (i*angle_step)) * _map.getResolution();
+        p.x = (pose.x + laser[i]/res * cos(ray_angle_start + (i*angle_step))) * res;
+        p.y = (pose.y + laser[i]/res * sin(ray_angle_start + (i*angle_step))) * res;
         p.z = 0;
         p_vec.push_back(p);
-//printf("laser pt: %f %f %f %f\n", p.x, p.y, laser.ranges[i], angle_step);
-//cin.get();
+#ifdef DEBUG_LASER
+        printf("laser pt: %f %f %f %f\n", p.x, p.y, laser[i], angle_step);
+        cin.get();
+#endif
     }
     _laser_marker.points = p_vec;
     _laser_pub.publish(_laser_marker);

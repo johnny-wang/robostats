@@ -51,12 +51,12 @@ bool ParticleFilter::initialize(
 
     //initialize model parameters
     //sensor models
-    sensorSigma = 0.025; //cm
+    sensorSigma = 0.02; //cm
     z_max =  8250; //sensor model max range(not validated) cm
     lambda_short = 0.003; //sensor model lambda short (not validated)
     //tuning params for weighting params
     weight_max = 1;
-    weight_rand = 0.005;
+    weight_rand = 0.05;
     weight_hit = 1;
     weight_short = 0.05;
 
@@ -557,8 +557,16 @@ void ParticleFilter::visualizeParticles() {
 
 //cout << "cos " << cos(_particles_list[i].pose.theta) << endl;
 //cout << "sin " << sin(_particles_list[i].pose.theta) << endl;
-        p1.x = 0.25*res*sin(_particles_list[i].pose.theta)+ p.x;
-        p1.y = 0.25*res*cos(_particles_list[i].pose.theta)+ p.y;
+        if (_particles_list[i].pose.theta > 3*M_PI/2.0 || 
+                (_particles_list[i].pose.theta>0 && _particles_list[i].pose.theta<M_PI/2.0))
+        {
+            p1.x = -0.25*res*sin(_particles_list[i].pose.theta-M_PI)+ p.x;
+            p1.y = -0.25*res*cos(_particles_list[i].pose.theta-M_PI)+ p.y;
+        } else {
+            p1.x = -0.25*res*sin(_particles_list[i].pose.theta+M_PI)+ p.x;
+            p1.y = -0.25*res*cos(_particles_list[i].pose.theta+M_PI)+ p.y;
+        }
+
         p1.z = 0;
         l_vec.push_back(p);
         l_vec.push_back(p1);

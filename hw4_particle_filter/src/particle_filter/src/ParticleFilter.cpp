@@ -5,10 +5,10 @@ static const int UNKNOWN = -1;
 static const int WALL = 100;
 static const int FREE = 0;
 
-#define DEBUG_INIT
-#define DEBUG_DATA
-#define DEBUG_MOTION
-#define DEBUG_SENSOR
+//#define DEBUG_INIT
+//#define DEBUG_DATA
+//#define DEBUG_MOTION
+//#define DEBUG_SENSOR
 using namespace std; // for debugging for now
 
 ParticleFilter::ParticleFilter(
@@ -97,16 +97,16 @@ bool ParticleFilter::run()
 #endif
         // Laser has both odom and laser readings
         // Run motion first then sensor model 
-/*
+
         geometry_msgs::Pose2D odom_data = _data.getOdomData();
         runMotionModel(odom_data);
-*/
+
 
         particle_filter_msgs::laser_odom laser_data = _data.getLaserData();
         // Run sensor model
-/*
+
         runSensorModel(laser_data);
-*/
+
         break;
     }
     case ODOM:
@@ -152,9 +152,9 @@ void ParticleFilter::createMarker(visualization_msgs::Marker &marker, int type) 
         marker.type = visualization_msgs::Marker::POINTS;
         marker.ns = "particle_pts";
 
-        marker.scale.x = 2.5 * res;
-        marker.scale.y = 2.5 * res;
-        marker.scale.z = 2.5 * res;
+        marker.scale.x = 1.5 * res;
+        marker.scale.y = 1.5 * res;
+        marker.scale.z = 1.5 * res;
 
         marker.color.r = 1.0f;
         marker.color.g = 0.0f;
@@ -165,9 +165,9 @@ void ParticleFilter::createMarker(visualization_msgs::Marker &marker, int type) 
         marker.type = visualization_msgs::Marker::LINE_LIST;
         marker.ns = "orientation_lines";
 
-        marker.scale.x = 1.5 * res;
-        marker.scale.y = 1.5 * res;
-        marker.scale.z = 1.5 * res;
+        marker.scale.x = 2.5 * res;
+        marker.scale.y = 0.25 * res;
+        marker.scale.z = 0.25 * res;
 
         marker.color.r = 0.0f;
         marker.color.g = 1.0f;
@@ -200,16 +200,17 @@ void ParticleFilter::initializeParticles()
     std::default_random_engine generator(seed);
     //std::uniform_real_distribution<double> rng1(y_min*res, y_max*res);
     //std::uniform_real_distribution<double> rng2(x_min*res, x_max*res);
-    std::uniform_real_distribution<double> rng1(y_min, y_max);
-    std::uniform_real_distribution<double> rng2(x_min, x_max);
+    std::uniform_real_distribution<double> rng1(x_min, x_max);
+    std::uniform_real_distribution<double> rng2(y_min, y_max);
     std::uniform_real_distribution<double> rng3(-M_PI, M_PI);
 
 #ifdef DEBUG_INIT
     std::cout << "Initializing particles" << std::endl;
+    std::cout << "x size: " << x_max << endl;
+    std::cout << "y size: " << y_max << endl;
 #endif
 
     // Resample until we get particle in free space
-    float scale = 1/_map.getResolution();
     int id_cnt = 0;
     for (int i = 0; i < _num_particles; ) {
         particle_filter_msgs::particle p;
@@ -356,6 +357,7 @@ void ParticleFilter::runSensorModel(particle_filter_msgs::laser_odom laser_data)
         if (rayAngle >= 2*M_PI) {rayAngle -= (2*M_PI);}
 
 #ifdef DEBUG_SENSOR
+        //_map.checkMaps();
         printf("laser scans at %f %f %f\n", particle.pose.x, particle.pose.y, rayAngle);
         sensor_msgs::LaserScan laser = _map.getLaserScans(particle.pose.x, particle.pose.y, rayAngle);
         

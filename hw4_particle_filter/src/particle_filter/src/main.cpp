@@ -29,11 +29,11 @@ int main(int argc, char** argv) {
 
 //#define DEBUG
 #ifdef DEBUG
-    std::string occ_map_name = "testmap.dat";
-    std::string dist_map_name = "testmap.dat.txt";
+    std::string occ_map_name = "testmap2.dat";
+    std::string dist_map_name = "testmap2.dat.bin";
 #else
     std::string occ_map_name = "wean.dat";
-    std::string dist_map_name = "wean.dat.txt";
+    std::string dist_map_name = "wean.dat.bin";
 #endif
 
     ParticleFilter *pf = new ParticleFilter(

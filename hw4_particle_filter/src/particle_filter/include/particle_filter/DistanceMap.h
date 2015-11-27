@@ -11,6 +11,7 @@
 // basic file operations
 #include <iostream>
 #include <fstream>
+#include <sstream>
 // Boost for string tokenizing
 #include <boost/algorithm/string.hpp>
 
@@ -25,13 +26,13 @@ public:
     DistanceMap();
     DistanceMap(nav_msgs::OccupancyGrid map, int num_degree);
 
-    unsigned int getXSize();
-    unsigned int getYSize();
-    unsigned int getResolution();
-    unsigned int getNumMeasurements();
-    unsigned int getNumDistX();
-    unsigned int getNumDistY();
-    unsigned int getMapValue(int x, int y);
+    int getXSize();
+    int getYSize();
+    int getResolution();
+    int getNumMeasurements();
+    int getNumDistX();
+    int getNumDistY();
+    int getMapValue(int x, int y);
     float getDistValue(float x, float y, float theta);
     sensor_msgs::LaserScan getLaserScans(float x, float y, float theta);
     std::vector<float> getDistVal(float x, float y);
@@ -48,6 +49,8 @@ public:
     void setNumDegrees(int num_degrees);
     void setRayStepSize(float ray_step);
 
+    void checkMaps();
+
 protected:
 
     void initialize();
@@ -55,7 +58,6 @@ protected:
     float calculate_dist(int x, int y, float angle);
     void print_dist_map();
     void print_occ_map();
-    void checkMaps();
 
     std::string _package_path;
 
